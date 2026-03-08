@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(curl -s http://localhost:8000/api/servicios/)",
+      "Bash(curl -s http://localhost:8000/api/clientes/)",
+      "Bash(git config user.name \"johnmchung\")",
+      "Bash(git config user.email \"johnmchung@users.noreply.github.com\")",
+      "Bash(git commit:*)"
+    ]
+  }
+}
