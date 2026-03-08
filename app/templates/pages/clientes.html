@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+{% block title %}Clientes - ECO PRETTY{% endblock %}
+
+{% block content %}
+
+<div class="flex items-center justify-between mb-4">
+    <h1 class="text-xl font-bold text-gray-800">Clientes</h1>
+    <button onclick="toggleFormNuevo()"
+            class="flex items-center gap-1 px-4 py-2 rounded-xl font-semibold text-sm"
+            style="background:#16a34a;color:white;border:none">
+        + Nuevo
+    </button>
+</div>
+
+<!-- Form nuevo cliente -->
+<div id="form-nuevo" class="hidden card p-4 mb-4 space-y-3">
+    <p class="font-semibold text-gray-700">Nuevo cliente</p>
+    <input type="text" id="n-nombre" placeholder="Nombre completo *" class="input-field">
+    <input type="tel" id="n-telefono" placeholder="Teléfono: 6XXX-XXXX *" class="input-field">
+    <input type="text" id="n-direccion" placeholder="Dirección (opcional)" class="input-field">
+    <input type="text" id="n-notas" placeholder="Notas (opcional)" class="input-field">
+    <div class="flex gap-2">
+        <button onclick="toggleFormNuevo()" class="btn-secondary flex-1">Cancelar</button>
+        <button onclick="crearCliente()"
+                class="flex-1 py-3 rounded-xl font-semibold text-sm"
+                style="background:#16a34a;color:white;border:none">
+            Guardar
+        </button>
+    </div>
+</div>
+
+<!-- Búsqueda -->
+<div class="mb-4">
+    <input type="text" id="busqueda" placeholder="Buscar por nombre o teléfono..."
+           class="input-field" oninput="filtrarClientes(this.value)">
+</div>
+
+<!-- Lista -->
+<div id="lista-clientes" class="space-y-2">
+    <div class="text-center text-gray-300 py-12">Cargando...</div>
+</div>
+
+<script>
+let todosClientes = [];
+
+async function cargarClientes() {
+    const res = await fetch('/api/clientes/');
+    todosClientes = await res.json();
+    renderClientes(todosClientes);
+}
+
+function renderClientes(clientes) {
+    const lista = document.getElementById('lista-clientes');
+    if (!clientes.length) {
+        lista.innerHTML = `
+            <div class="text-center py-12 text-gray-400">
+                <svg class="w-12 h-12 mx-auto mb-3 opacity-25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <p class="font-medium">No hay clientes aún</p>
+            </div>`;
+        return;
+    }
+
+    lista.innerHTML = clientes.map(c => `
+        <div class="card p-4 flex items-center justify-between">
+            <div>
+                <p class="font-semibold text-gray-800">${c.nombre}</p>
+                <p class="text-sm text-gray-400">${c.telefono}</p>
+                ${c.direccion ? `<p class="text-xs text-gray-400 mt-0.5">${c.direccion}</p>` : ''}
+            </div>
+            <a href="/nueva-orden?cliente_id=${c.id}&nombre=${encodeURIComponent(c.nombre)}&telefono=${encodeURIComponent(c.telefono)}"
+               class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium"
+               style="background:#f0fdf4;color:#16a34a">
+                + Orden
+            </a>
+        </div>
+    `).join('');
+}
+
+function filtrarClientes(q) {
+    if (!q.trim()) { renderClientes(todosClientes); return; }
+    const lower = q.toLowerCase();
+    renderClientes(todosClientes.filter(c =>
+        c.nombre.toLowerCase().includes(lower) || c.telefono.includes(q)
+    ));
+}
+
+function toggleFormNuevo() {
+    document.getElementById('form-nuevo').classList.toggle('hidden');
+}
+
+async function crearCliente() {
+    const nombre = document.getElementById('n-nombre').value.trim();
+    const telefono = document.getElementById('n-telefono').value.trim();
+    const direccion = document.getElementById('n-direccion').value.trim();
+    const notas = document.getElementById('n-notas').value.trim();
+
+    if (!nombre || !telefono) {
+        mostrarToast('Nombre y teléfono son obligatorios', 'error'); return;
+    }
+
+    const res = await fetch('/api/clientes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nombre, telefono, direccion: direccion || null, notas: notas || null }),
+    });
+
+    if (res.ok) {
+        document.getElementById('n-nombre').value = '';
+        document.getElementById('n-telefono').value = '';
+        document.getElementById('n-direccion').value = '';
+        document.getElementById('n-notas').value = '';
+        toggleFormNuevo();
+        await cargarClientes();
+        mostrarToast('Cliente creado correctamente');
+    } else {
+        mostrarToast('Error al crear cliente', 'error');
+    }
+}
+
+cargarClientes();
+</script>
+{% endblock %}
