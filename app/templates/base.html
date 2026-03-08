@@ -193,6 +193,16 @@
             <span class="text-[11px] font-{% if request.url.path == '/clientes' %}bold{% else %}semibold{% endif %}">Clientes</span>
         </a>
 
+        <a href="/sastreria" class="flex flex-col items-center justify-center flex-1 h-full gap-0.5 relative
+            {% if request.url.path == '/sastreria' or request.url.path == '/sastreria/nueva' %}nav-active{% else %}nav-inactive{% endif %}">
+            {% if request.url.path == '/sastreria' or request.url.path == '/sastreria/nueva' %}<span class="nav-dot"></span>{% endif %}
+            <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{% if request.url.path == '/sastreria' or request.url.path == '/sastreria/nueva' %}2.5{% else %}2{% endif %}"
+                      d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z"/>
+            </svg>
+            <span class="text-[11px] font-{% if request.url.path == '/sastreria' or request.url.path == '/sastreria/nueva' %}bold{% else %}semibold{% endif %}">Sastrería</span>
+        </a>
+
         <!-- FAB central -->
         <a href="/nueva-orden" class="flex items-center justify-center -mt-6 px-2">
             <div class="w-[54px] h-[54px] rounded-2xl flex items-center justify-center"

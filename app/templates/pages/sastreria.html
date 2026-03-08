@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+{% block title %}Sastrería - {{ lavanderia.nombre }}{% endblock %}
+
+{% block content %}
+
+<!-- Header row -->
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">✂️ Sastrería</h1>
+        <p class="text-sm text-slate-400 font-medium mt-0.5" id="subtitle-fecha">Hoy</p>
+    </div>
+    <div class="flex items-center gap-2">
+        <button onclick="cargarTrabajos(filtroActual)"
+                class="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+                style="background:#f1f5f9" title="Actualizar">
+            <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+            </svg>
+        </button>
+        <a href="/sastreria/nueva"
+           class="h-10 px-4 rounded-xl flex items-center gap-1.5 font-bold text-sm text-white transition-all"
+           style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 3px 12px rgba(22,163,74,0.30)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nuevo
+        </a>
+    </div>
+</div>
+
+<!-- Search bar + Hoy/Todas toggle -->
+<div class="flex gap-2 mb-4">
+    <div class="flex-1 relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+        </svg>
+        <input id="input-busqueda" type="search" placeholder="Buscar cliente o #trabajo..."
+               class="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all"
+               style="background:#f1f5f9;border:1.5px solid transparent"
+               onfocus="this.style.borderColor='#16a34a';this.style.background='white'"
+               onblur="this.style.borderColor='transparent';this.style.background='#f1f5f9'">
+    </div>
+    <button id="btn-toggle-fecha" onclick="toggleModoFecha()"
+            class="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+            style="background:#f1f5f9;color:#64748b">
+        Hoy
+    </button>
+</div>
+
+<!-- Filter chips -->
+<div class="flex gap-2 overflow-x-auto pb-1 mb-5 -mx-1 px-1" style="scrollbar-width:none;-webkit-overflow-scrolling:touch">
+    <button onclick="filtrar('')" data-val=""
+            class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
+            style="background:#16a34a;color:white;box-shadow:0 3px 10px rgba(22,163,74,0.25)">
+        Todos
+    </button>
+    <button onclick="filtrar('recibido')" data-val="recibido"
+            class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
+            style="background:#eff6ff;color:#3b82f6">
+        Recibido
+    </button>
+    <button onclick="filtrar('en_proceso')" data-val="en_proceso"
+            class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
+            style="background:#fff7ed;color:#ea580c">
+        En Proceso
+    </button>
+    <button onclick="filtrar('listo')" data-val="listo"
+            class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
+            style="background:#f0fdf4;color:#16a34a">
+        Listo
+    </button>
+    <button onclick="filtrar('entregado')" data-val="entregado"
+            class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
+            style="background:#f8fafc;color:#64748b">
+        Entregado
+    </button>
+</div>
+
+<!-- Modal de notas -->
+<div id="modal-nota" class="hidden fixed inset-0 z-50 flex items-end justify-center md:items-center" style="background:rgba(15,23,42,0.5)">
+    <div class="w-full max-w-lg bg-white rounded-t-2xl md:rounded-2xl flex flex-col" style="max-height:75vh;box-shadow:0 -8px 40px rgba(0,0,0,0.15)">
+        <div class="flex-shrink-0 px-6 pt-5 pb-4 border-b border-slate-100">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Notas · <span id="nota-trabajo-label" class="text-slate-400 font-medium"></span></h3>
+                <button onclick="cerrarModalNota()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            <textarea id="nota-textarea"
+                      placeholder="Ej: Tela delicada, usar hilo color beige..."
+                      class="w-full rounded-xl text-sm text-slate-700 font-medium resize-none outline-none p-3 transition-all"
+                      style="background:#fefce8;border:1.5px solid #fde68a;min-height:120px"
+                      onfocus="this.style.borderColor='#f59e0b'"
+                      onblur="this.style.borderColor='#fde68a'"></textarea>
+        </div>
+        <div class="flex-shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3">
+            <button onclick="cerrarModalNota()" class="btn-secondary flex-1">Cancelar</button>
+            <button onclick="guardarNota()" class="btn-primary flex-1" style="padding:13px">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Work list -->
+<div id="lista-trabajos" class="space-y-3">
+    <div class="card p-4 space-y-3">
+        <div class="skeleton h-4 w-2/3"></div>
+        <div class="skeleton h-3 w-1/2"></div>
+        <div class="skeleton h-10 w-full"></div>
+    </div>
+    <div class="card p-4 space-y-3">
+        <div class="skeleton h-4 w-3/4"></div>
+        <div class="skeleton h-3 w-2/5"></div>
+        <div class="skeleton h-10 w-full"></div>
+    </div>
+</div>
+
+<script>
+const ESTATUS = {
+    recibido:   { bg: '#eff6ff', color: '#2563eb', accent: '#3b82f6', label: 'Recibido' },
+    en_proceso: { bg: '#fff7ed', color: '#c2410c', accent: '#f97316', label: 'En Proceso' },
+    listo:      { bg: '#f0fdf4', color: '#15803d', accent: '#22c55e', label: 'Listo' },
+    entregado:  { bg: '#f8fafc', color: '#64748b', accent: '#94a3b8', label: 'Entregado' },
+};
+const SIGUIENTE = { recibido: 'en_proceso', en_proceso: 'listo', listo: 'entregado' };
+const SIGUIENTE_LABEL = { recibido: 'En Proceso', en_proceso: 'Listo ✓', listo: 'Entregado' };
+
+const BTN_NEXT_STYLE = {
+    recibido:   'background:#eff6ff;color:#2563eb;border:1.5px solid #bfdbfe',
+    en_proceso: 'background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa',
+    listo:      'background:linear-gradient(135deg,#16a34a,#15803d);color:white;border:none;box-shadow:0 3px 12px rgba(22,163,74,0.30)',
+};
+
+const TIPO_INFO = {
+    ruedo:  { emoji: '📏', label: 'Ruedo',  bg: '#fdf4ff', color: '#9333ea' },
+    zipper: { emoji: '🔗', label: 'Zipper', bg: '#eff6ff', color: '#2563eb' },
+    boton:  { emoji: '🔘', label: 'Botón',  bg: '#fff7ed', color: '#ea580c' },
+    otro:   { emoji: '✂️', label: 'Otro',   bg: '#f8fafc', color: '#64748b' },
+};
+
+let filtroActual = '';
+let modoTodas = false;
+let trabajosCache = [];
+let busquedaTimer = null;
+
+function toggleModoFecha() {
+    modoTodas = !modoTodas;
+    const btn = document.getElementById('btn-toggle-fecha');
+    const sub = document.getElementById('subtitle-fecha');
+    if (modoTodas) {
+        btn.textContent = 'Todas';
+        btn.style.background = '#16a34a';
+        btn.style.color = 'white';
+        sub.textContent = 'Todos los trabajos';
+    } else {
+        btn.textContent = 'Hoy';
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#64748b';
+        sub.textContent = 'Hoy';
+    }
+    cargarTrabajos(filtroActual);
+}
+
+document.getElementById('input-busqueda').addEventListener('input', function() {
+    clearTimeout(busquedaTimer);
+    busquedaTimer = setTimeout(() => aplicarBusqueda(this.value.trim()), 300);
+});
+
+function aplicarBusqueda(termino) {
+    if (!termino) { renderTrabajos(trabajosCache, filtroActual); return; }
+    const q = termino.toLowerCase();
+    const filtrados = trabajosCache.filter(t => {
+        const nombre = (t.cliente_nombre || '').toLowerCase();
+        const num = String(t.id).padStart(4, '0');
+        const prenda = (t.prenda || '').toLowerCase();
+        return nombre.includes(q) || num.includes(q) || String(t.id).includes(q) || prenda.includes(q);
+    });
+    renderTrabajos(filtrados, filtroActual, termino);
+}
+
+async function cargarTrabajos(estatus = '') {
+    const params = new URLSearchParams();
+    if (estatus) params.set('estatus', estatus);
+    else if (!modoTodas) params.set('fecha', new Date().toISOString().split('T')[0]);
+
+    const lista = document.getElementById('lista-trabajos');
+    lista.innerHTML = `
+        <div class="card p-4 space-y-3">
+            <div class="skeleton h-4 w-2/3"></div>
+            <div class="skeleton h-3 w-1/2"></div>
+            <div class="skeleton h-10 w-full"></div>
+        </div>
+        <div class="card p-4 space-y-3">
+            <div class="skeleton h-4 w-3/4"></div>
+            <div class="skeleton h-3 w-2/5"></div>
+            <div class="skeleton h-10 w-full"></div>
+        </div>`;
+
+    const res = await fetch(`/api/sastreria/?${params}`);
+    const trabajos = await res.json();
+    trabajosCache = trabajos;
+
+    const busqueda = document.getElementById('input-busqueda').value.trim();
+    if (busqueda) aplicarBusqueda(busqueda);
+    else renderTrabajos(trabajos, estatus);
+}
+
+function renderTrabajos(trabajos, estatus = '', busqueda = '') {
+    const lista = document.getElementById('lista-trabajos');
+
+    if (!trabajos.length) {
+        if (busqueda) {
+            lista.innerHTML = `
+                <div class="text-center py-16 text-slate-400">
+                    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl" style="background:#f1f5f9">✂️</div>
+                    <p class="font-bold text-slate-500 mb-1">No se encontraron trabajos para esta búsqueda</p>
+                    <button onclick="document.getElementById('input-busqueda').value='';aplicarBusqueda('')"
+                            class="inline-block mt-3 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
+                            style="background:linear-gradient(135deg,#16a34a,#15803d)">Ver todos</button>
+                </div>`;
+        } else {
+            lista.innerHTML = `
+                <div class="text-center py-16 text-slate-400">
+                    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl" style="background:#f1f5f9">✂️</div>
+                    <p class="font-bold text-slate-500 mb-1">Sin trabajos${estatus ? ' en este estado' : (modoTodas ? '' : ' hoy')}</p>
+                    <a href="/sastreria/nueva"
+                       class="inline-block mt-3 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
+                       style="background:linear-gradient(135deg,#16a34a,#15803d)">+ Nuevo trabajo</a>
+                </div>`;
+        }
+        return;
+    }
+
+    lista.innerHTML = trabajos.map(t => {
+        const est  = ESTATUS[t.estatus];
+        const sig  = SIGUIENTE[t.estatus];
+        const tipo = TIPO_INFO[t.tipo_trabajo] || TIPO_INFO.otro;
+        const hora = new Date(t.created_at).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' });
+        const num  = String(t.id).padStart(4, '0');
+
+        // Entrega estimada badge
+        let entregaBadge = '';
+        if (t.fecha_entrega_estimada) {
+            const entrega = new Date(t.fecha_entrega_estimada);
+            const ahora = new Date();
+            const hoyStr = ahora.toDateString();
+            const entregaStr = entrega.toDateString();
+            const entregaLabel = entrega.toLocaleString('es-PA', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const yaEntregado = t.estatus === 'entregado';
+            let badgeStyle, alertIcon = '';
+            if (!yaEntregado && entrega < ahora) {
+                badgeStyle = 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca';
+                alertIcon = '⚠️ ';
+            } else if (!yaEntregado && entregaStr === hoyStr) {
+                badgeStyle = 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa';
+            } else {
+                badgeStyle = 'background:#f8fafc;color:#64748b;border:1px solid #e2e8f0';
+            }
+            entregaBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full mt-1" style="${badgeStyle}">
+                🕐 ${alertIcon}${entregaLabel}
+            </span>`;
+        }
+
+        return `
+        <div class="card card-press overflow-hidden" style="border-left:4px solid ${est.accent}">
+            <div class="p-4">
+
+                <!-- Top: name + badge -->
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div class="min-w-0 flex-1">
+                        <div class="flex items-center gap-2 flex-wrap mb-0.5">
+                            <span class="font-bold text-slate-900 text-[15px]">${t.cliente_nombre}</span>
+                            <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
+                                  style="background:${tipo.bg};color:${tipo.color}">
+                                ${tipo.emoji} ${tipo.label}
+                            </span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">${t.cliente_telefono} · ${hora}</span>
+                        ${entregaBadge}
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="abrirModalNota(${t.id}, ${JSON.stringify(t.notas || '')})"
+                                title="Notas"
+                                class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
+                                style="${t.notas ? 'background:#fef9c3;color:#a16207' : 'background:#f1f5f9;color:#94a3b8'}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                            </svg>
+                        </button>
+                        <span class="badge shrink-0" style="background:${est.bg};color:${est.color}">
+                            <span class="badge-dot" style="background:${est.color}"></span>
+                            ${est.label}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Nota post-it -->
+                ${t.notas ? `
+                <div class="flex items-start gap-2 px-3 py-2 rounded-xl mb-3" style="background:#fef9c3;border:1px solid #fde68a">
+                    <svg class="w-3.5 h-3.5 mt-0.5 shrink-0" style="color:#a16207" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                    </svg>
+                    <span class="text-xs font-medium" style="color:#92400e">${t.notas}</span>
+                </div>` : ''}
+
+                <!-- Middle: prenda + descripción + precio -->
+                <div class="px-3 py-2.5 rounded-xl mb-3" style="background:#f8fafc">
+                    <div class="flex items-center justify-between gap-2">
+                        <div class="min-w-0 flex-1">
+                            <p class="text-sm font-bold text-slate-800 truncate">${t.prenda}</p>
+                            <p class="text-xs text-slate-500 font-medium truncate mt-0.5">${t.descripcion}</p>
+                        </div>
+                        <span class="text-base font-extrabold text-slate-900 shrink-0">$${parseFloat(t.precio).toFixed(2)}</span>
+                    </div>
+                </div>
+
+                <!-- Order number -->
+                <div class="flex items-center justify-end mb-3">
+                    <span class="text-[11px] text-slate-300 font-mono font-bold">#${num}</span>
+                </div>
+
+                <!-- Action buttons -->
+                <div class="flex gap-2">
+                    ${sig ? `
+                    <button onclick="cambiarEstatus(${t.id}, '${sig}')"
+                            class="btn-touch flex-1 rounded-2xl font-bold text-sm transition-all"
+                            style="${BTN_NEXT_STYLE[t.estatus] || 'background:#16a34a;color:white;border:none'};padding:12px 8px">
+                        Marcar: ${SIGUIENTE_LABEL[t.estatus]}
+                    </button>` : `
+                    <div class="flex-1 flex items-center gap-1.5">
+                        <svg class="w-4 h-4" style="color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                        </svg>
+                        <span class="text-xs font-semibold" style="color:#16a34a">Completado</span>
+                    </div>`}
+                </div>
+
+            </div>
+        </div>`;
+    }).join('');
+}
+
+async function cambiarEstatus(trabajoId, nuevoEstatus) {
+    const res = await fetch(`/api/sastreria/${trabajoId}/estatus`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estatus: nuevoEstatus }),
+    });
+    if (res.ok) {
+        cargarTrabajos(filtroActual);
+        if (nuevoEstatus === 'listo') mostrarToast('Notificación enviada al cliente');
+    } else {
+        mostrarToast('Error al actualizar el estatus', 'error');
+    }
+}
+
+function filtrar(estatus) {
+    filtroActual = estatus;
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        const activo = btn.dataset.val === estatus;
+        if (activo) {
+            btn.style.background = '#16a34a';
+            btn.style.color = 'white';
+            btn.style.boxShadow = '0 3px 10px rgba(22,163,74,0.25)';
+        } else {
+            const styles = {
+                '':          'background:#f1f5f9;color:#64748b;box-shadow:none',
+                'recibido':  'background:#eff6ff;color:#3b82f6;box-shadow:none',
+                'en_proceso':'background:#fff7ed;color:#ea580c;box-shadow:none',
+                'listo':     'background:#f0fdf4;color:#16a34a;box-shadow:none',
+                'entregado': 'background:#f8fafc;color:#64748b;box-shadow:none',
+            };
+            const s = styles[btn.dataset.val] || 'background:#f1f5f9;color:#64748b';
+            s.split(';').forEach(rule => {
+                const [prop, val] = rule.split(':');
+                if (prop && val) btn.style[prop.trim().replace(/-([a-z])/g, (_, l) => l.toUpperCase())] = val.trim();
+            });
+        }
+    });
+    cargarTrabajos(estatus);
+}
+
+document.getElementById('modal-nota').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalNota();
+});
+
+let notaActualId = null;
+
+function abrirModalNota(trabajoId, textoActual) {
+    notaActualId = trabajoId;
+    document.getElementById('nota-trabajo-label').textContent = `#${String(trabajoId).padStart(4, '0')}`;
+    document.getElementById('nota-textarea').value = textoActual || '';
+    document.getElementById('modal-nota').classList.remove('hidden');
+    setTimeout(() => document.getElementById('nota-textarea').focus(), 100);
+}
+
+function cerrarModalNota() {
+    notaActualId = null;
+    document.getElementById('modal-nota').classList.add('hidden');
+}
+
+async function guardarNota() {
+    if (!notaActualId) return;
+    const texto = document.getElementById('nota-textarea').value.trim() || null;
+    const res = await fetch(`/api/sastreria/${notaActualId}/notas`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notas: texto }),
+    });
+    cerrarModalNota();
+    if (res.ok) {
+        cargarTrabajos(filtroActual);
+        mostrarToast('Nota guardada');
+    } else {
+        mostrarToast('Error al guardar la nota', 'error');
+    }
+}
+
+cargarTrabajos();
+</script>
+{% endblock %}

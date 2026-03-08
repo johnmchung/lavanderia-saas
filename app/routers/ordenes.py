@@ -32,6 +32,10 @@ class PagoCreate(BaseModel):
     notas: Optional[str] = None
 
 
+class NotasInternas(BaseModel):
+    notas_internas: Optional[str] = None
+
+
 @router.get("/")
 async def listar_ordenes(
     estatus: Optional[str] = None,
@@ -190,6 +194,21 @@ async def cambiar_estatus(orden_id: int, datos: CambiarEstatus):
             )
 
     return {"message": f"Orden {orden_id} actualizada a '{datos.estatus}'"}
+
+
+@router.patch("/{orden_id}/notas-internas")
+async def actualizar_notas_internas(orden_id: int, datos: NotasInternas):
+    """Actualizar las notas internas de una orden (solo visibles para el staff)."""
+    db = get_supabase()
+    result = (
+        db.table("ordenes")
+        .update({"notas_internas": datos.notas_internas})
+        .eq("id", orden_id)
+        .execute()
+    )
+    if not result.data:
+        raise HTTPException(status_code=404, detail="Orden no encontrada")
+    return {"message": f"Notas internas de orden {orden_id} actualizadas"}
 
 
 @router.post("/{orden_id}/pagos")

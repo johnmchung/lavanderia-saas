@@ -4,7 +4,7 @@
 {% block content %}
 
 <!-- Header row -->
-<div class="flex items-center justify-between mb-5">
+<div class="flex items-center justify-between mb-4">
     <div>
         <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Órdenes</h1>
         <p class="text-sm text-slate-400 font-medium mt-0.5" id="subtitle-fecha">Hoy</p>
@@ -15,6 +15,38 @@
         <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                   d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+    </button>
+</div>
+
+<!-- Search bar + Hoy/Todas toggle -->
+<div class="flex gap-2 mb-4">
+    <div class="flex-1 relative">
+        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+        </svg>
+        <input id="input-busqueda" type="search" placeholder="Buscar cliente o #orden..."
+               class="w-full pl-9 pr-3 py-2.5 rounded-xl text-sm font-medium text-slate-700 outline-none transition-all"
+               style="background:#f1f5f9;border:1.5px solid transparent"
+               onfocus="this.style.borderColor='#16a34a';this.style.background='white'"
+               onblur="this.style.borderColor='transparent';this.style.background='#f1f5f9'">
+    </div>
+    <button id="btn-toggle-fecha" onclick="toggleModoFecha()"
+            class="shrink-0 px-4 py-2.5 rounded-xl text-xs font-bold transition-all"
+            style="background:#f1f5f9;color:#64748b">
+        Hoy
+    </button>
+</div>
+
+<!-- Banner filtro por cliente -->
+<div id="banner-cliente" class="hidden flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl mb-3"
+     style="background:#fefce8;border:1.5px solid #fde68a">
+    <span class="text-xs font-bold text-amber-700" id="banner-cliente-texto">Filtrando por: —</span>
+    <button onclick="quitarFiltroCliente()"
+            class="w-5 h-5 rounded-full flex items-center justify-center shrink-0 transition-all hover:opacity-70"
+            style="background:#fde68a;color:#92400e" title="Quitar filtro">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
         </svg>
     </button>
 </div>
@@ -46,6 +78,50 @@
             style="background:#f8fafc;color:#64748b">
         Entregado
     </button>
+</div>
+
+<!-- Modal confirmación cambio de estatus -->
+<div id="modal-confirmar-estatus" class="hidden fixed inset-0 z-50 flex items-center justify-center px-6" style="background:rgba(15,23,42,0.45)">
+    <div class="bg-white rounded-2xl w-full max-w-xs p-5 text-center" style="box-shadow:0 8px 32px rgba(0,0,0,0.18)">
+        <p class="text-base font-bold text-slate-900 mb-1" id="confirmar-estatus-texto">¿Marcar como Entregado?</p>
+        <p id="confirmar-estatus-aviso" class="text-xs text-slate-400 mb-5 hidden">Esta acción es irreversible.</p>
+        <div class="flex gap-2">
+            <button onclick="cerrarModalConfirmarEstatus()" class="btn-secondary flex-1 text-sm" style="padding:11px">Cancelar</button>
+            <button onclick="confirmarCambioEstatus()" id="btn-confirmar-estatus"
+                    class="btn-touch flex-1 rounded-xl font-bold text-sm text-white transition-all"
+                    style="background:linear-gradient(135deg,#16a34a,#15803d);padding:11px">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal notas internas -->
+<div id="modal-nota" class="hidden fixed inset-0 z-50 flex items-end justify-center md:items-center" style="background:rgba(15,23,42,0.5)">
+    <div class="w-full max-w-lg bg-white rounded-t-2xl md:rounded-2xl flex flex-col" style="max-height:75vh;box-shadow:0 -8px 40px rgba(0,0,0,0.15)">
+        <div class="flex-shrink-0 px-6 pt-5 pb-4 border-b border-slate-100">
+            <div class="w-10 h-1 bg-slate-200 rounded-full mx-auto mb-4"></div>
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900">Nota interna · <span id="nota-orden-label" class="text-slate-400 font-medium"></span></h3>
+                <button onclick="cerrarModalNota()" class="text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        <div class="flex-1 overflow-y-auto px-6 py-4">
+            <textarea id="nota-textarea"
+                      placeholder="Ej: El cliente pidió poca centrifugada, revisar bolsillo derecho..."
+                      class="w-full rounded-xl text-sm text-slate-700 font-medium resize-none outline-none p-3 transition-all"
+                      style="background:#fefce8;border:1.5px solid #fde68a;min-height:120px"
+                      onfocus="this.style.borderColor='#f59e0b'"
+                      onblur="this.style.borderColor='#fde68a'"></textarea>
+            <p class="text-[11px] text-slate-400 mt-2">Solo visible para el equipo, no para el cliente.</p>
+        </div>
+        <div class="flex-shrink-0 border-t border-slate-100 px-6 py-4 flex gap-3">
+            <button onclick="cerrarModalNota()" class="btn-secondary flex-1">Cancelar</button>
+            <button onclick="guardarNotaInterna()" class="btn-primary flex-1" style="padding:13px">Guardar</button>
+        </div>
+    </div>
 </div>
 
 <!-- Modal de pago -->
@@ -139,12 +215,81 @@ const BTN_NEXT_STYLE = {
 };
 
 let filtroActual = '';
+let modoTodas = false;
+let ordenesCache = [];
+let busquedaTimer = null;
 let pagoActual = { ordenId: null, monto: null, metodo: null };
+let filtroClienteId = null;
+let filtroClienteNombre = '';
+
+function toggleModoFecha() {
+    modoTodas = !modoTodas;
+    const btn = document.getElementById('btn-toggle-fecha');
+    const subtitulo = document.getElementById('subtitle-fecha');
+    if (modoTodas) {
+        btn.textContent = 'Todas';
+        btn.style.background = '#16a34a';
+        btn.style.color = 'white';
+        subtitulo.textContent = 'Todas las órdenes';
+    } else {
+        btn.textContent = 'Hoy';
+        btn.style.background = '#f1f5f9';
+        btn.style.color = '#64748b';
+        subtitulo.textContent = 'Hoy';
+    }
+    cargarOrdenes(filtroActual);
+}
+
+document.getElementById('input-busqueda').addEventListener('input', function() {
+    clearTimeout(busquedaTimer);
+    busquedaTimer = setTimeout(() => aplicarBusqueda(this.value.trim()), 300);
+});
+
+function filtrarPorCliente(clienteId, clienteNombre) {
+    filtroClienteId = clienteId;
+    filtroClienteNombre = clienteNombre;
+    document.getElementById('banner-cliente-texto').textContent = `Filtrando por: ${clienteNombre}`;
+    document.getElementById('banner-cliente').classList.remove('hidden');
+    aplicarFiltros();
+}
+
+function quitarFiltroCliente() {
+    filtroClienteId = null;
+    filtroClienteNombre = '';
+    document.getElementById('banner-cliente').classList.add('hidden');
+    aplicarFiltros();
+}
+
+function aplicarFiltros() {
+    const termino = document.getElementById('input-busqueda').value.trim();
+    let base = ordenesCache;
+    if (filtroClienteId !== null) base = base.filter(o => o.cliente_id === filtroClienteId);
+    if (filtroActual) base = base.filter(o => o.estatus === filtroActual);
+    if (!termino) {
+        renderOrdenes(base, filtroActual);
+        return;
+    }
+    const q = termino.toLowerCase();
+    const filtradas = base.filter(o => {
+        const nombre = (o.cliente_nombre || '').toLowerCase();
+        const num = String(o.id).padStart(4, '0');
+        return nombre.includes(q) || num.includes(q) || String(o.id).includes(q);
+    });
+    renderOrdenes(filtradas, filtroActual, termino);
+}
+
+function aplicarBusqueda(termino) {
+    if (!termino && filtroClienteId === null) {
+        renderOrdenes(filtroActual ? ordenesCache.filter(o => o.estatus === filtroActual) : ordenesCache, filtroActual);
+        return;
+    }
+    aplicarFiltros();
+}
 
 async function cargarOrdenes(estatus = '') {
     const params = new URLSearchParams();
-    if (estatus) params.set('estatus', estatus);
-    else params.set('fecha', new Date().toISOString().split('T')[0]);
+    // Siempre traemos sin filtro de estatus para tener el cache completo y poder contar
+    if (!modoTodas) params.set('fecha', new Date().toISOString().split('T')[0]);
 
     const lista = document.getElementById('lista-ordenes');
     lista.innerHTML = `
@@ -160,22 +305,58 @@ async function cargarOrdenes(estatus = '') {
         </div>`;
 
     const res = await fetch(`/api/ordenes/?${params}`);
-    const ordenes = await res.json();
+    ordenesCache = await res.json();
+    aplicarFiltros();
+}
+
+const CHIP_LABEL = { '': 'Todas', recibido: 'Recibido', en_proceso: 'En Proceso', listo: 'Listo', entregado: 'Entregado' };
+
+function actualizarConteosFiltros() {
+    const base = filtroClienteId !== null ? ordenesCache.filter(o => o.cliente_id === filtroClienteId) : ordenesCache;
+    const conteos = { '': base.length };
+    ['recibido', 'en_proceso', 'listo', 'entregado'].forEach(e => {
+        conteos[e] = base.filter(o => o.estatus === e).length;
+    });
+    document.querySelectorAll('.filtro-btn').forEach(btn => {
+        const val = btn.dataset.val;
+        btn.textContent = `${CHIP_LABEL[val]} (${conteos[val] ?? 0})`;
+    });
+}
+
+function renderOrdenes(ordenes, estatus = '', busqueda = '') {
+    actualizarConteosFiltros();
+    const lista = document.getElementById('lista-ordenes');
 
     if (!ordenes.length) {
-        lista.innerHTML = `
-            <div class="text-center py-16 text-slate-400">
-                <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:#f1f5f9">
-                    <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                    </svg>
-                </div>
-                <p class="font-bold text-slate-500 mb-1">Sin órdenes${estatus ? ' en este estado' : ' hoy'}</p>
-                <a href="/nueva-orden"
-                   class="inline-block mt-3 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
-                   style="background:linear-gradient(135deg,#16a34a,#15803d)">+ Nueva orden</a>
-            </div>`;
+        if (busqueda) {
+            lista.innerHTML = `
+                <div class="text-center py-16 text-slate-400">
+                    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:#f1f5f9">
+                        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+                        </svg>
+                    </div>
+                    <p class="font-bold text-slate-500 mb-1">No se encontraron órdenes para esta búsqueda</p>
+                    <button onclick="document.getElementById('input-busqueda').value='';aplicarBusqueda('')"
+                            class="inline-block mt-3 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
+                            style="background:linear-gradient(135deg,#16a34a,#15803d)">Ver todas</button>
+                </div>`;
+        } else {
+            lista.innerHTML = `
+                <div class="text-center py-16 text-slate-400">
+                    <div class="w-16 h-16 rounded-2xl mx-auto mb-4 flex items-center justify-center" style="background:#f1f5f9">
+                        <svg class="w-8 h-8 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <p class="font-bold text-slate-500 mb-1">Sin órdenes${estatus ? ' en este estado' : (modoTodas ? '' : ' hoy')}</p>
+                    <a href="/nueva-orden"
+                       class="inline-block mt-3 px-5 py-2.5 rounded-xl font-bold text-sm text-white"
+                       style="background:linear-gradient(135deg,#16a34a,#15803d)">+ Nueva orden</a>
+                </div>`;
+        }
         return;
     }
 
@@ -222,7 +403,9 @@ async function cargarOrdenes(estatus = '') {
                 <div class="flex items-start justify-between gap-2 mb-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap mb-0.5">
-                            <span class="font-bold text-slate-900 text-[15px]">${o.cliente_nombre}</span>
+                            <button onclick="filtrarPorCliente(${o.cliente_id}, ${JSON.stringify(o.cliente_nombre)})"
+                                    class="font-bold text-slate-900 text-[15px] hover:text-amber-700 transition-colors text-left"
+                                    title="Ver órdenes de este cliente">${o.cliente_nombre}</button>
                             ${o.es_domicilio ? `
                             <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full"
                                   style="background:#eff6ff;color:#3b82f6">
@@ -236,11 +419,32 @@ async function cargarOrdenes(estatus = '') {
                         <span class="text-xs text-slate-400 font-medium">${o.cliente_telefono} · ${hora}</span>
                         ${entregaBadge}
                     </div>
-                    <span class="badge shrink-0" style="background:${est.bg};color:${est.color}">
-                        <span class="badge-dot" style="background:${est.color}"></span>
-                        ${est.label}
-                    </span>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button onclick="abrirModalNota(${o.id}, ${JSON.stringify(o.notas_internas || '')})"
+                                title="Nota interna"
+                                class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
+                                style="${o.notas_internas ? 'background:#fef9c3;color:#a16207' : 'background:#f1f5f9;color:#94a3b8'}">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                            </svg>
+                        </button>
+                        <span class="badge shrink-0" style="background:${est.bg};color:${est.color}">
+                            <span class="badge-dot" style="background:${est.color}"></span>
+                            ${est.label}
+                        </span>
+                    </div>
                 </div>
+
+                <!-- Nota interna post-it -->
+                ${o.notas_internas ? `
+                <div class="flex items-start gap-2 px-3 py-2 rounded-xl mb-3" style="background:#fef9c3;border:1px solid #fde68a">
+                    <svg class="w-3.5 h-3.5 mt-0.5 shrink-0" style="color:#a16207" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                    </svg>
+                    <span class="text-xs font-medium" style="color:#92400e">${o.notas_internas}</span>
+                </div>` : ''}
 
                 <!-- Middle: services info row -->
                 <div class="flex items-center justify-between px-3 py-2.5 rounded-xl mb-3" style="background:#f8fafc">
@@ -278,7 +482,7 @@ async function cargarOrdenes(estatus = '') {
                 <!-- Action buttons -->
                 <div class="flex gap-2">
                     ${sig ? `
-                    <button onclick="cambiarEstatus(${o.id}, '${sig}')"
+                    <button onclick="pedirConfirmacionEstatus(${o.id}, '${sig}')"
                             class="btn-touch flex-1 rounded-2xl font-bold text-sm transition-all"
                             style="${BTN_NEXT_STYLE[o.estatus] || 'background:#16a34a;color:white;border:none'};padding:12px 8px">
                         Marcar: ${SIGUIENTE_LABEL[o.estatus]}
@@ -305,6 +509,28 @@ async function cargarOrdenes(estatus = '') {
             </div>
         </div>`;
     }).join('');
+}
+
+let pendienteEstatus = { ordenId: null, nuevoEstatus: null };
+
+function pedirConfirmacionEstatus(ordenId, nuevoEstatus) {
+    pendienteEstatus = { ordenId, nuevoEstatus };
+    const label = ESTATUS[nuevoEstatus]?.label || nuevoEstatus;
+    document.getElementById('confirmar-estatus-texto').textContent = `¿Marcar como ${label}?`;
+    const aviso = document.getElementById('confirmar-estatus-aviso');
+    aviso.classList.toggle('hidden', nuevoEstatus !== 'entregado');
+    document.getElementById('modal-confirmar-estatus').classList.remove('hidden');
+}
+
+function cerrarModalConfirmarEstatus() {
+    pendienteEstatus = { ordenId: null, nuevoEstatus: null };
+    document.getElementById('modal-confirmar-estatus').classList.add('hidden');
+}
+
+async function confirmarCambioEstatus() {
+    const { ordenId, nuevoEstatus } = pendienteEstatus;
+    cerrarModalConfirmarEstatus();
+    if (ordenId && nuevoEstatus) await cambiarEstatus(ordenId, nuevoEstatus);
 }
 
 async function cambiarEstatus(ordenId, nuevoEstatus) {
@@ -389,13 +615,51 @@ function filtrar(estatus) {
             });
         }
     });
-    cargarOrdenes(estatus);
+    aplicarFiltros();
 }
 
 // Cerrar modal al tocar el fondo
+document.getElementById('modal-confirmar-estatus').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalConfirmarEstatus();
+});
 document.getElementById('modal-pago').addEventListener('click', function(e) {
     if (e.target === this) cerrarModalPago();
 });
+document.getElementById('modal-nota').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalNota();
+});
+
+let notaActualOrdenId = null;
+
+function abrirModalNota(ordenId, textoActual) {
+    notaActualOrdenId = ordenId;
+    document.getElementById('nota-orden-label').textContent = `#${String(ordenId).padStart(4, '0')}`;
+    document.getElementById('nota-textarea').value = textoActual || '';
+    document.getElementById('modal-nota').classList.remove('hidden');
+    setTimeout(() => document.getElementById('nota-textarea').focus(), 100);
+}
+
+function cerrarModalNota() {
+    notaActualOrdenId = null;
+    document.getElementById('modal-nota').classList.add('hidden');
+}
+
+async function guardarNotaInterna() {
+    if (!notaActualOrdenId) return;
+    const texto = document.getElementById('nota-textarea').value.trim() || null;
+    const res = await fetch(`/api/ordenes/${notaActualOrdenId}/notas-internas`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notas_internas: texto }),
+    });
+    cerrarModalNota();
+    if (res.ok) {
+        cargarOrdenes(filtroActual);
+        mostrarToast('Nota interna guardada');
+    } else {
+        mostrarToast('Error al guardar la nota', 'error');
+    }
+}
 
 cargarOrdenes();
 </script>
