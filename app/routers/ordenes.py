@@ -19,6 +19,7 @@ class OrdenCreate(BaseModel):
     es_domicilio: bool = False
     direccion_entrega: Optional[str] = None
     notas: Optional[str] = None
+    fecha_entrega_estimada: Optional[str] = None  # ISO 8601 string, e.g. "2024-03-10T17:00:00"
 
 
 class CambiarEstatus(BaseModel):
@@ -122,6 +123,7 @@ async def crear_orden(orden: OrdenCreate):
         "direccion_entrega": orden.direccion_entrega if orden.es_domicilio else None,
         "estatus": "recibido",
         "notas": orden.notas,
+        "fecha_entrega_estimada": orden.fecha_entrega_estimada,
     }
     nueva_orden = db.table("ordenes").insert(orden_data).execute()
     orden_id = nueva_orden.data[0]["id"]

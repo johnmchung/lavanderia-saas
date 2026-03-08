@@ -188,6 +188,32 @@ async function cargarOrdenes(estatus = '') {
         const hora = new Date(o.created_at).toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' });
         const ordenNum = String(o.id).padStart(4, '0');
 
+        // Entrega estimada badge
+        let entregaBadge = '';
+        if (o.fecha_entrega_estimada) {
+            const entrega = new Date(o.fecha_entrega_estimada);
+            const ahora = new Date();
+            const hoyStr = ahora.toDateString();
+            const entregaStr = entrega.toDateString();
+            const entregaLabel = entrega.toLocaleString('es-PA', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const yaEntregado = o.estatus === 'entregado';
+            let badgeStyle, alertIcon = '';
+            if (!yaEntregado && entrega < ahora) {
+                // Vencida
+                badgeStyle = 'background:#fef2f2;color:#dc2626;border:1px solid #fecaca';
+                alertIcon = '⚠️ ';
+            } else if (!yaEntregado && entregaStr === hoyStr) {
+                // Hoy
+                badgeStyle = 'background:#fff7ed;color:#ea580c;border:1px solid #fed7aa';
+            } else {
+                // Futura o ya entregada
+                badgeStyle = 'background:#f8fafc;color:#64748b;border:1px solid #e2e8f0';
+            }
+            entregaBadge = `<span class="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full mt-1" style="${badgeStyle}">
+                🕐 ${alertIcon}${entregaLabel}
+            </span>`;
+        }
+
         return `
         <div class="card card-press overflow-hidden" style="border-left:4px solid ${est.accent}">
             <div class="p-4">
@@ -208,6 +234,7 @@ async function cargarOrdenes(estatus = '') {
                             </span>` : ''}
                         </div>
                         <span class="text-xs text-slate-400 font-medium">${o.cliente_telefono} · ${hora}</span>
+                        ${entregaBadge}
                     </div>
                     <span class="badge shrink-0" style="background:${est.bg};color:${est.color}">
                         <span class="badge-dot" style="background:${est.color}"></span>
@@ -268,6 +295,11 @@ async function cargarOrdenes(estatus = '') {
                             style="background:#f0fdf4;color:#16a34a;border:1.5px solid #86efac">
                         Cobrar
                     </button>` : ''}
+                    <a href="/orden/${o.id}/etiqueta"
+                       class="btn-touch rounded-2xl font-bold text-sm px-3 transition-all flex items-center justify-center gap-1"
+                       style="background:#f8fafc;color:#475569;border:1.5px solid #e2e8f0">
+                        🏷️ <span>Etiqueta</span>
+                    </a>
                 </div>
 
             </div>

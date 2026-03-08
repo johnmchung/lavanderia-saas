@@ -45,7 +45,7 @@ async def perfil_cliente(cliente_id: int):
 
     ordenes_res = (
         db.table("vista_ordenes")
-        .select("id,estatus,precio_total,total_pagado,created_at,nombres_servicios,kilos")
+        .select("id,estatus,precio_total,total_pagado,created_at,servicios,kilos")
         .eq("cliente_id", cliente_id)
         .order("created_at", desc=True)
         .execute()

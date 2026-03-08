@@ -165,6 +165,60 @@
                class="input-field">
     </div>
 
+    <!-- ── 6. ENTREGA ESTIMADA ── -->
+    <div class="card p-4">
+        <p class="section-label">
+            <span class="w-5 h-5 rounded-full text-[10px] font-black text-white flex items-center justify-center shrink-0"
+                  style="background:#94a3b8">6</span>
+            Entrega estimada (opcional)
+        </p>
+
+        <!-- Quick options -->
+        <div class="flex gap-2 mb-3 flex-wrap">
+            <button type="button" onclick="setEntregaRapida(0)"
+                    data-entrega="hoy"
+                    class="entrega-chip px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style="background:#f1f5f9;color:#64748b">
+                Hoy
+            </button>
+            <button type="button" onclick="setEntregaRapida(1)"
+                    data-entrega="manana"
+                    class="entrega-chip px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style="background:#16a34a;color:white;box-shadow:0 2px 8px rgba(22,163,74,0.25)">
+                Mañana
+            </button>
+            <button type="button" onclick="setEntregaRapida(2)"
+                    data-entrega="2dias"
+                    class="entrega-chip px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style="background:#f1f5f9;color:#64748b">
+                En 2 días
+            </button>
+            <button type="button" onclick="toggleEntregaManual()"
+                    id="chip-manual"
+                    class="entrega-chip px-3 py-1.5 rounded-full text-xs font-bold transition-all"
+                    style="background:#f1f5f9;color:#64748b">
+                Manual
+            </button>
+        </div>
+
+        <!-- Summary display -->
+        <div id="entrega-resumen" class="text-xs font-semibold text-slate-500 mb-2"></div>
+
+        <!-- Manual datetime picker -->
+        <div id="campo-entrega-manual" class="hidden mt-2">
+            <input type="datetime-local" id="fecha_entrega_estimada"
+                   class="input-field"
+                   onchange="onEntregaManualChange()">
+        </div>
+
+        <!-- Hidden: clear button -->
+        <button type="button" id="btn-limpiar-entrega"
+                onclick="limpiarEntrega()"
+                class="hidden mt-2 text-xs font-bold text-slate-400 underline">
+            Quitar fecha estimada
+        </button>
+    </div>
+
     <!-- ── TOTAL ── -->
     <div class="rounded-3xl p-6 text-center relative overflow-hidden"
          style="background:linear-gradient(135deg,#16a34a 0%,#15803d 50%,#166534 100%)">
@@ -186,6 +240,118 @@
 let serviciosData = [];
 let serviciosSeleccionados = new Map(); // id -> precio_personalizado
 let clienteSeleccionadoId = null;
+let fechaEntregaISO = null; // ISO string o null
+
+function setEntregaRapida(diasOffset) {
+    const d = new Date();
+    d.setDate(d.getDate() + diasOffset);
+    d.setHours(17, 0, 0, 0);
+    fechaEntregaISO = d.toISOString();
+
+    // Highlight chip
+    document.querySelectorAll('.entrega-chip').forEach(c => {
+        c.style.background = '#f1f5f9';
+        c.style.color = '#64748b';
+        c.style.boxShadow = 'none';
+    });
+    const chips = document.querySelectorAll('[data-entrega]');
+    const chipMap = { 0: 'hoy', 1: 'manana', 2: '2dias' };
+    const target = chipMap[diasOffset];
+    chips.forEach(c => {
+        if (c.dataset.entrega === target) {
+            c.style.background = '#16a34a';
+            c.style.color = 'white';
+            c.style.boxShadow = '0 2px 8px rgba(22,163,74,0.25)';
+        }
+    });
+
+    // Hide manual picker
+    document.getElementById('campo-entrega-manual').classList.add('hidden');
+    document.getElementById('chip-manual').style.background = '#f1f5f9';
+    document.getElementById('chip-manual').style.color = '#64748b';
+
+    actualizarResumenEntrega();
+}
+
+function toggleEntregaManual() {
+    const campo = document.getElementById('campo-entrega-manual');
+    const visible = !campo.classList.contains('hidden');
+    campo.classList.toggle('hidden', visible);
+
+    if (!visible) {
+        // Opening manual — deselect quick chips
+        document.querySelectorAll('[data-entrega]').forEach(c => {
+            c.style.background = '#f1f5f9';
+            c.style.color = '#64748b';
+            c.style.boxShadow = 'none';
+        });
+        document.getElementById('chip-manual').style.background = '#16a34a';
+        document.getElementById('chip-manual').style.color = 'white';
+        // Pre-fill with current fechaEntregaISO or mañana 5pm
+        if (!fechaEntregaISO) {
+            const d = new Date();
+            d.setDate(d.getDate() + 1);
+            d.setHours(17, 0, 0, 0);
+            fechaEntregaISO = d.toISOString();
+        }
+        const local = toLocalDatetimeInput(fechaEntregaISO);
+        document.getElementById('fecha_entrega_estimada').value = local;
+    } else {
+        document.getElementById('chip-manual').style.background = '#f1f5f9';
+        document.getElementById('chip-manual').style.color = '#64748b';
+    }
+    actualizarResumenEntrega();
+}
+
+function onEntregaManualChange() {
+    const val = document.getElementById('fecha_entrega_estimada').value;
+    if (val) {
+        fechaEntregaISO = new Date(val).toISOString();
+    } else {
+        fechaEntregaISO = null;
+    }
+    actualizarResumenEntrega();
+}
+
+function limpiarEntrega() {
+    fechaEntregaISO = null;
+    document.getElementById('fecha_entrega_estimada').value = '';
+    document.getElementById('campo-entrega-manual').classList.add('hidden');
+    document.querySelectorAll('.entrega-chip').forEach(c => {
+        c.style.background = '#f1f5f9';
+        c.style.color = '#64748b';
+        c.style.boxShadow = 'none';
+    });
+    actualizarResumenEntrega();
+}
+
+function actualizarResumenEntrega() {
+    const resumen = document.getElementById('entrega-resumen');
+    const btnLimpiar = document.getElementById('btn-limpiar-entrega');
+    if (fechaEntregaISO) {
+        const d = new Date(fechaEntregaISO);
+        resumen.textContent = 'Entrega: ' + d.toLocaleString('es-PA', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+        btnLimpiar.classList.remove('hidden');
+    } else {
+        resumen.textContent = '';
+        btnLimpiar.classList.add('hidden');
+    }
+}
+
+function toLocalDatetimeInput(isoString) {
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// Default: mañana a las 5pm
+(function initEntrega() {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(17, 0, 0, 0);
+    fechaEntregaISO = d.toISOString();
+    actualizarResumenEntrega();
+})();
 
 async function cargarServicios() {
     const lista = document.getElementById('servicios-lista');
@@ -398,6 +564,7 @@ document.getElementById('form-orden').addEventListener('submit', async (e) => {
             es_domicilio: domicilioActivo,
             direccion_entrega: document.getElementById('direccion_entrega').value || null,
             notas: document.getElementById('notas').value || null,
+            fecha_entrega_estimada: fechaEntregaISO || null,
         }),
     });
 

@@ -75,3 +75,13 @@ async def pagina_deudas(request: Request):
         "request": request,
         "lavanderia": get_lavanderia_data(),
     })
+
+
+@app.get("/orden/{orden_id}/etiqueta")
+async def pagina_etiqueta(request: Request, orden_id: int):
+    return templates.TemplateResponse("pages/etiqueta.html", {
+        "request": request,
+        "lavanderia": get_lavanderia_data(),
+        "orden_id": orden_id,
+        "orden_id_str": str(orden_id).zfill(4),
+    })

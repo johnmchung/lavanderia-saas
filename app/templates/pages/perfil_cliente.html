@@ -169,7 +169,7 @@ async function cargarPerfil() {
                                 ${saldo > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#fef2f2;color:#dc2626">$${saldo.toFixed(2)} pendiente</span>` : ''}
                             </div>
                             <p class="text-xs text-slate-400 font-medium">${fmtFecha(o.created_at)}</p>
-                            ${o.nombres_servicios ? `<p class="text-xs text-slate-500 font-medium mt-0.5 truncate">${o.nombres_servicios}</p>` : ''}
+                            ${o.servicios ? `<p class="text-xs text-slate-500 font-medium mt-0.5 truncate">${o.servicios}</p>` : ''}
                         </div>
                         <p class="font-black text-slate-900 shrink-0" style="font-feature-settings:'tnum'">${fmtMoneda(o.precio_total)}</p>
                     </div>
