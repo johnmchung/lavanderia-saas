@@ -1,193 +1,427 @@
 {% extends "base.html" %}
-{% block title %}Resumen - ECO PRETTY{% endblock %}
+{% block title %}Dashboard — ECO PRETTY{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
-<!-- Header -->
+<!-- ── Header ── -->
 <div class="flex items-center justify-between mb-6">
-    <div>
-        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Resumen</h1>
-        <p class="text-sm text-slate-400 font-medium mt-0.5">Actualiza cada 30 s</p>
-    </div>
-    <button onclick="cargarDashboard()"
-            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
-            style="background:#f1f5f9" title="Actualizar">
-        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-        </svg>
-    </button>
+  <div>
+    <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Dashboard</h1>
+    <p id="ts" class="text-xs text-slate-400 font-medium mt-0.5">Cargando…</p>
+  </div>
+  <button id="btnRefresh" onclick="cargarTodo()"
+          class="w-10 h-10 rounded-xl flex items-center justify-center transition-all"
+          style="background:#f1f5f9" title="Actualizar">
+    <svg id="iconRefresh" class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+    </svg>
+  </button>
 </div>
 
-<div id="dashboard-content">
-    <!-- Skeleton -->
-    <div class="rounded-3xl p-6 mb-4 space-y-3" style="background:linear-gradient(135deg,#16a34a,#15803d)">
-        <div class="skeleton h-3 w-24 opacity-40"></div>
-        <div class="skeleton h-14 w-40 opacity-40"></div>
-        <div class="grid grid-cols-3 gap-3 mt-4">
-            <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
-            <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
-            <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
-        </div>
+<!-- ── Skeleton ── -->
+<div id="sk" class="space-y-4">
+  <div class="rounded-3xl p-6 space-y-3" style="background:linear-gradient(135deg,#16a34a,#15803d)">
+    <div class="skeleton h-3 w-24 opacity-40"></div>
+    <div class="skeleton h-14 w-48 opacity-40"></div>
+    <div class="grid grid-cols-3 gap-3 mt-4">
+      <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
+      <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
+      <div class="skeleton h-14 opacity-30 rounded-2xl"></div>
     </div>
-    <div class="card p-5 mb-4 space-y-3">
-        <div class="skeleton h-3 w-32"></div>
-        <div class="grid grid-cols-2 gap-3">
-            <div class="skeleton h-20 rounded-2xl"></div>
-            <div class="skeleton h-20 rounded-2xl"></div>
-            <div class="skeleton h-20 rounded-2xl"></div>
-            <div class="skeleton h-20 rounded-2xl"></div>
-        </div>
+  </div>
+  <div class="grid grid-cols-3 gap-3">
+    <div class="card p-4 space-y-2"><div class="skeleton h-3 w-16"></div><div class="skeleton h-7 w-20"></div></div>
+    <div class="card p-4 space-y-2"><div class="skeleton h-3 w-16"></div><div class="skeleton h-7 w-20"></div></div>
+    <div class="card p-4 space-y-2"><div class="skeleton h-3 w-16"></div><div class="skeleton h-7 w-20"></div></div>
+  </div>
+  <div class="card p-5 space-y-3">
+    <div class="skeleton h-3 w-36"></div>
+    <div class="grid grid-cols-2 gap-3">
+      <div class="skeleton h-16 rounded-2xl"></div><div class="skeleton h-16 rounded-2xl"></div>
+      <div class="skeleton h-16 rounded-2xl"></div><div class="skeleton h-16 rounded-2xl"></div>
     </div>
+  </div>
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="card p-5 space-y-3"><div class="skeleton h-3 w-28"></div><div class="skeleton h-12 w-32"></div><div class="skeleton h-2 rounded-full"></div></div>
+    <div class="card p-5 space-y-3"><div class="skeleton h-3 w-28"></div><div class="skeleton h-12 w-24"></div><div class="skeleton h-2 rounded-full"></div></div>
+  </div>
+</div>
+
+<!-- ── Dashboard ── -->
+<div id="dash" class="hidden space-y-8">
+
+  <!-- ═══ HOY ═══ -->
+  <section>
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-1 h-5 rounded-full" style="background:#16a34a"></div>
+      <h2 class="text-xs font-black text-slate-600 uppercase tracking-widest">Hoy</h2>
+    </div>
+
+    <!-- Hero: ventas del día -->
+    <div id="heroVentas" class="rounded-3xl p-6 mb-4 relative overflow-hidden"
+         style="background:linear-gradient(135deg,#16a34a 0%,#15803d 60%,#14532d 100%)">
+    </div>
+
+    <!-- KPIs mini: ticket | tasa cobro | hora pico -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+      <div id="kpiTicket" class="card p-4"></div>
+      <div id="kpiTasa"   class="card p-4"></div>
+      <div id="kpiHora"   class="card p-4"></div>
+    </div>
+
+    <!-- Status breakdown -->
+    <div class="card p-5">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Estado de órdenes</p>
+      <div id="statusGrid" class="grid grid-cols-2 gap-3"></div>
+    </div>
+  </section>
+
+  <!-- ═══ RENDIMIENTO ═══ -->
+  <section>
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-1 h-5 rounded-full" style="background:#3b82f6"></div>
+      <h2 class="text-xs font-black text-slate-600 uppercase tracking-widest">Rendimiento</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div id="rendCobro"    class="card p-5"></div>
+      <div id="rendEntregas" class="card p-5"></div>
+    </div>
+    <div id="alertaPendientes" class="mt-4"></div>
+  </section>
+
+  <!-- ═══ ESTA SEMANA ═══ -->
+  <section>
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-1 h-5 rounded-full" style="background:#8b5cf6"></div>
+      <h2 class="text-xs font-black text-slate-600 uppercase tracking-widest">Esta Semana</h2>
+    </div>
+    <div class="grid grid-cols-2 gap-4 mb-4">
+      <div id="semEsta"   class="card p-5"></div>
+      <div id="semPasada" class="card p-5"></div>
+    </div>
+    <div class="card p-5">
+      <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Ventas — últimos 7 días</p>
+      <canvas id="ventasChart" height="140"></canvas>
+    </div>
+  </section>
+
+  <!-- ═══ RANKINGS ═══ -->
+  <section>
+    <div class="flex items-center gap-3 mb-4">
+      <div class="w-1 h-5 rounded-full" style="background:#f59e0b"></div>
+      <h2 class="text-xs font-black text-slate-600 uppercase tracking-widest">Rankings</h2>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div id="topServicios" class="card p-5"></div>
+      <div id="topClientes"  class="card p-5"></div>
+    </div>
+  </section>
+
 </div>
 
 <script>
-async function cargarDashboard() {
-    const res = await fetch('/api/dashboard/hoy');
-    const d = await res.json();
-    const div = document.getElementById('dashboard-content');
+let ventasChart = null;
+const $  = id => document.getElementById(id);
+const f$ = n  => '$' + Number(n).toFixed(2);
+const pc = n  => Number(n).toFixed(1) + '%';
 
-    const cobradoPct = d.ventas_total > 0
-        ? Math.round((d.total_cobrado / d.ventas_total) * 100) : 0;
-
-    div.innerHTML = `
-
-        <!-- ── Hero card: ventas ── -->
-        <div class="rounded-3xl p-6 mb-4 relative overflow-hidden"
-             style="background:linear-gradient(135deg,#16a34a 0%,#15803d 60%,#14532d 100%)">
-            <div class="absolute inset-0"
-                 style="background:radial-gradient(circle at 15% 25%, rgba(255,255,255,0.12), transparent 55%)"></div>
-            <div class="absolute top-4 right-4 w-24 h-24 rounded-full"
-                 style="background:rgba(255,255,255,0.05);transform:translate(20%,-20%)"></div>
-
-            <p class="text-green-200 text-xs font-bold uppercase tracking-widest mb-1 relative">Ventas de hoy</p>
-            <p class="text-6xl font-black text-white tracking-tight mb-1 relative"
-               style="font-feature-settings:'tnum'">$${d.ventas_total.toFixed(2)}</p>
-            <p class="text-green-300 text-xs font-semibold mb-5 relative">${d.total_ordenes_hoy} orden${d.total_ordenes_hoy !== 1 ? 'es' : ''} recibida${d.total_ordenes_hoy !== 1 ? 's' : ''}</p>
-
-            <!-- Sub-stats -->
-            <div class="grid grid-cols-3 gap-2.5 relative">
-                <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,0.12)">
-                    <p class="text-white font-extrabold text-xl">$${d.total_cobrado.toFixed(2)}</p>
-                    <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Cobrado</p>
-                </div>
-                <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,0.12)">
-                    <p class="text-white font-extrabold text-xl">$${d.pendiente_cobro.toFixed(2)}</p>
-                    <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Pendiente</p>
-                </div>
-                <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,0.12)">
-                    <p class="text-white font-extrabold text-xl">${d.total_ordenes_hoy}</p>
-                    <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Órdenes</p>
-                </div>
-            </div>
-
-            ${d.ventas_total > 0 ? `
-            <!-- Progress bar cobrado -->
-            <div class="mt-4 relative">
-                <div class="h-1.5 rounded-full" style="background:rgba(255,255,255,0.2)">
-                    <div class="h-full rounded-full transition-all duration-700"
-                         style="background:white;width:${cobradoPct}%"></div>
-                </div>
-                <p class="text-green-200 text-[10px] font-semibold mt-1.5">${cobradoPct}% cobrado</p>
-            </div>` : ''}
-        </div>
-
-        <!-- ── Status breakdown ── -->
-        <div class="card p-5 mb-4">
-            <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Estado de órdenes de hoy</p>
-            <div class="grid grid-cols-2 gap-3">
-
-                <div class="rounded-2xl p-4 flex items-center gap-3" style="background:#eff6ff">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                         style="background:#dbeafe">
-                        <svg class="w-5 h-5" style="color:#3b82f6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-3xl font-black" style="color:#2563eb;line-height:1">${d.ordenes_por_estatus.recibido || 0}</p>
-                        <p class="text-[11px] font-bold mt-0.5" style="color:#3b82f6">Recibido</p>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl p-4 flex items-center gap-3" style="background:#fff7ed">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                         style="background:#fed7aa">
-                        <svg class="w-5 h-5" style="color:#ea580c" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-3xl font-black" style="color:#c2410c;line-height:1">${d.ordenes_por_estatus.en_proceso || 0}</p>
-                        <p class="text-[11px] font-bold mt-0.5" style="color:#ea580c">En Proceso</p>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl p-4 flex items-center gap-3" style="background:#f0fdf4">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                         style="background:#bbf7d0">
-                        <svg class="w-5 h-5" style="color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                  d="M5 13l4 4L19 7"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-3xl font-black" style="color:#15803d;line-height:1">${d.ordenes_por_estatus.listo || 0}</p>
-                        <p class="text-[11px] font-bold mt-0.5" style="color:#16a34a">Listo</p>
-                    </div>
-                </div>
-
-                <div class="rounded-2xl p-4 flex items-center gap-3" style="background:#f8fafc">
-                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
-                         style="background:#e2e8f0">
-                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                        </svg>
-                    </div>
-                    <div>
-                        <p class="text-3xl font-black text-slate-500" style="line-height:1">${d.ordenes_por_estatus.entregado || 0}</p>
-                        <p class="text-[11px] font-bold text-slate-400 mt-0.5">Entregado</p>
-                    </div>
-                </div>
-
-            </div>
-        </div>
-
-        <!-- ── Histórico pendientes ── -->
-        ${d.total_pendientes_entrega > 0 ? `
-        <div class="card p-5 flex items-center gap-4" style="border-left:4px solid #ef4444">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                 style="background:#fef2f2">
-                <svg class="w-6 h-6" style="color:#ef4444" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                </svg>
-            </div>
-            <div class="flex-1">
-                <p class="font-bold text-slate-800 text-sm">Sin entregar (histórico)</p>
-                <p class="text-xs text-slate-400 font-medium mt-0.5">Incluye días anteriores</p>
-            </div>
-            <p class="text-4xl font-black" style="color:#dc2626">${d.total_pendientes_entrega}</p>
-        </div>` : `
-        <div class="card p-5 flex items-center gap-4" style="border-left:4px solid #16a34a">
-            <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
-                 style="background:#f0fdf4">
-                <svg class="w-6 h-6" style="color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
-                </svg>
-            </div>
-            <div>
-                <p class="font-bold text-slate-800 text-sm">Todo entregado</p>
-                <p class="text-xs text-slate-400 font-medium mt-0.5">Sin órdenes pendientes históricas</p>
-            </div>
-        </div>`}
-    `;
+async function cargarTodo() {
+  $('sk').classList.remove('hidden');
+  $('dash').classList.add('hidden');
+  $('btnRefresh').disabled = true;
+  try {
+    const [hoy, semana, srv, cli] = await Promise.all([
+      fetch('/api/dashboard/hoy').then(r => r.json()),
+      fetch('/api/dashboard/semana').then(r => r.json()),
+      fetch('/api/dashboard/top-servicios').then(r => r.json()),
+      fetch('/api/dashboard/top-clientes').then(r => r.json()),
+    ]);
+    renderHoy(hoy);
+    renderRendimiento(hoy);
+    renderSemana(semana);
+    renderRankings(srv.top_servicios || [], cli.top_clientes || []);
+    $('ts').textContent = 'Actualizado ' +
+      new Date().toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit' });
+    $('sk').classList.add('hidden');
+    $('dash').classList.remove('hidden');
+  } catch (e) {
+    $('ts').textContent = 'Error al cargar — reintenta';
+  }
+  $('btnRefresh').disabled = false;
 }
 
-cargarDashboard();
-setInterval(cargarDashboard, 30000);
+/* ── HOY ── */
+function renderHoy(d) {
+  const cobPct = d.ventas_total > 0
+    ? Math.round(d.total_cobrado / d.ventas_total * 100) : 0;
+
+  $('heroVentas').innerHTML = `
+    <div class="absolute inset-0"
+         style="background:radial-gradient(circle at 15% 25%,rgba(255,255,255,.12),transparent 55%)"></div>
+    <div class="absolute top-4 right-4 w-24 h-24 rounded-full"
+         style="background:rgba(255,255,255,.05);transform:translate(20%,-20%)"></div>
+    <p class="text-green-200 text-xs font-bold uppercase tracking-widest mb-1 relative">Ventas de hoy</p>
+    <p class="text-6xl font-black text-white tracking-tight mb-1 relative"
+       style="font-feature-settings:'tnum'">${f$(d.ventas_total)}</p>
+    <p class="text-green-300 text-xs font-semibold mb-5 relative">
+      ${d.total_ordenes_hoy} orden${d.total_ordenes_hoy !== 1 ? 'es' : ''}
+    </p>
+    <div class="grid grid-cols-3 gap-2.5 relative">
+      <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,.12)">
+        <p class="text-white font-extrabold text-xl">${f$(d.total_cobrado)}</p>
+        <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Cobrado</p>
+      </div>
+      <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,.12)">
+        <p class="text-white font-extrabold text-xl">${f$(d.pendiente_cobro)}</p>
+        <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Pendiente</p>
+      </div>
+      <div class="rounded-2xl p-3 text-center" style="background:rgba(255,255,255,.12)">
+        <p class="text-white font-extrabold text-xl">${d.total_ordenes_hoy}</p>
+        <p class="text-green-200 text-[10px] font-bold uppercase tracking-wide mt-0.5">Órdenes</p>
+      </div>
+    </div>
+    ${d.ventas_total > 0 ? `
+    <div class="mt-4 relative">
+      <div class="h-1.5 rounded-full" style="background:rgba(255,255,255,.2)">
+        <div class="h-full rounded-full" style="background:white;width:${cobPct}%"></div>
+      </div>
+      <p class="text-green-200 text-[10px] font-semibold mt-1.5">${cobPct}% cobrado</p>
+    </div>` : ''}
+  `;
+
+  // Ticket promedio
+  $('kpiTicket').innerHTML = `
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Ticket prom.</p>
+    <p class="text-2xl font-black" style="color:#16a34a;line-height:1">${f$(d.ticket_promedio)}</p>
+    <p class="text-[10px] text-slate-400 mt-1">por orden</p>
+  `;
+
+  // Tasa cobro: verde ≥80%, amarillo ≥50%, rojo <50%
+  const tasaColor = d.tasa_cobro >= 80 ? '#16a34a' : d.tasa_cobro >= 50 ? '#f59e0b' : '#ef4444';
+  $('kpiTasa').innerHTML = `
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Tasa cobro</p>
+    <p class="text-2xl font-black" style="color:${tasaColor};line-height:1">${pc(d.tasa_cobro)}</p>
+    <p class="text-[10px] text-slate-400 mt-1">pagadas</p>
+  `;
+
+  // Hora pico
+  $('kpiHora').innerHTML = `
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Hora pico</p>
+    <p class="text-2xl font-black text-slate-700" style="line-height:1">${d.hora_pico || '—'}</p>
+    <p class="text-[10px] text-slate-400 mt-1">más trabajo</p>
+  `;
+
+  // Status breakdown
+  const statuses = [
+    { key: 'recibido',   label: 'Recibido',   bg: '#eff6ff', iconBg: '#dbeafe', color: '#2563eb',
+      icon: 'M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4' },
+    { key: 'en_proceso', label: 'En Proceso', bg: '#fff7ed', iconBg: '#fed7aa', color: '#c2410c',
+      icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' },
+    { key: 'listo',      label: 'Listo',      bg: '#f0fdf4', iconBg: '#bbf7d0', color: '#15803d',
+      icon: 'M5 13l4 4L19 7' },
+    { key: 'entregado',  label: 'Entregado',  bg: '#f8fafc', iconBg: '#e2e8f0', color: '#64748b',
+      icon: 'M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4' },
+  ];
+  $('statusGrid').innerHTML = statuses.map(s => `
+    <div class="rounded-2xl p-4 flex items-center gap-3" style="background:${s.bg}">
+      <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+           style="background:${s.iconBg}">
+        <svg class="w-5 h-5" style="color:${s.color}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${s.icon}"/>
+        </svg>
+      </div>
+      <div>
+        <p class="text-3xl font-black" style="color:${s.color};line-height:1">
+          ${d.ordenes_por_estatus[s.key] || 0}
+        </p>
+        <p class="text-[11px] font-bold mt-0.5" style="color:${s.color}">${s.label}</p>
+      </div>
+    </div>
+  `).join('');
+}
+
+/* ── RENDIMIENTO ── */
+function renderRendimiento(d) {
+  const cobPct   = d.ventas_total > 0
+    ? Math.round(d.total_cobrado / d.ventas_total * 100) : 0;
+  const barColor = cobPct >= 80 ? '#16a34a' : cobPct >= 50 ? '#f59e0b' : '#ef4444';
+
+  $('rendCobro').innerHTML = `
+    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Tasa de Cobro</p>
+    <div class="flex items-end gap-1 mb-3">
+      <p class="text-5xl font-black" style="color:${barColor};line-height:1">${cobPct}</p>
+      <p class="text-2xl font-black mb-0.5" style="color:${barColor}">%</p>
+    </div>
+    <div class="h-2 rounded-full mb-2" style="background:#e2e8f0">
+      <div class="h-full rounded-full" style="background:${barColor};width:${cobPct}%"></div>
+    </div>
+    <div class="flex justify-between text-[10px] text-slate-400 font-semibold mt-1">
+      <span>${f$(d.total_cobrado)} cobrado</span>
+      <span>${f$(d.pendiente_cobro)} pendiente</span>
+    </div>
+  `;
+
+  const entregadas = d.ordenes_por_estatus.entregado || 0;
+  const recibidas  = d.total_ordenes_hoy;
+  const entPct     = recibidas > 0 ? Math.round(entregadas / recibidas * 100) : 0;
+
+  $('rendEntregas').innerHTML = `
+    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Entregas Hoy</p>
+    <div class="flex items-center justify-around mb-3">
+      <div class="text-center">
+        <p class="text-4xl font-black" style="color:#16a34a;line-height:1">${entregadas}</p>
+        <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase">Entregadas</p>
+      </div>
+      <p class="text-2xl text-slate-300 font-light">/</p>
+      <div class="text-center">
+        <p class="text-4xl font-black text-slate-700" style="line-height:1">${recibidas}</p>
+        <p class="text-[10px] font-bold text-slate-400 mt-1 uppercase">Recibidas</p>
+      </div>
+    </div>
+    <div class="h-2 rounded-full" style="background:#e2e8f0">
+      <div class="h-full rounded-full" style="background:#16a34a;width:${entPct}%"></div>
+    </div>
+    <p class="text-[10px] text-slate-400 font-semibold mt-1.5">${entPct}% entregado</p>
+  `;
+
+  const n = d.total_pendientes_entrega;
+  $('alertaPendientes').innerHTML = n > 0 ? `
+    <div class="card p-5 flex items-center gap-4" style="border-left:4px solid #ef4444">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+           style="background:#fef2f2">
+        <svg class="w-6 h-6" style="color:#ef4444" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
+      </div>
+      <div class="flex-1">
+        <p class="font-bold text-slate-800 text-sm">Sin entregar (histórico)</p>
+        <p class="text-xs text-slate-400 font-medium mt-0.5">Incluye todos los días anteriores</p>
+      </div>
+      <p class="text-4xl font-black" style="color:#dc2626">${n}</p>
+    </div>
+  ` : `
+    <div class="card p-5 flex items-center gap-4" style="border-left:4px solid #16a34a">
+      <div class="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0"
+           style="background:#f0fdf4">
+        <svg class="w-6 h-6" style="color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+        </svg>
+      </div>
+      <div>
+        <p class="font-bold text-slate-800 text-sm">Todo al día</p>
+        <p class="text-xs text-slate-400 font-medium mt-0.5">Sin órdenes pendientes históricas</p>
+      </div>
+    </div>
+  `;
+}
+
+/* ── SEMANA ── */
+function renderSemana(s) {
+  const v         = s.variacion_pct;
+  const varColor  = v >= 0 ? '#16a34a' : '#ef4444';
+  const varIcon   = v >= 0 ? '▲' : '▼';
+  const varSign   = v >= 0 ? '+' : '';
+
+  $('semEsta').innerHTML = `
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Esta semana</p>
+    <p class="text-3xl font-black" style="color:#16a34a;line-height:1">${f$(s.esta_semana)}</p>
+    <p class="text-xs font-semibold mt-2" style="color:${varColor}">
+      ${varIcon} ${varSign}${pc(v)} vs sem. anterior
+    </p>
+  `;
+
+  $('semPasada').innerHTML = `
+    <p class="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Semana pasada</p>
+    <p class="text-3xl font-black text-slate-400" style="line-height:1">${f$(s.semana_pasada)}</p>
+    <p class="text-[10px] text-slate-400 font-medium mt-2">referencia</p>
+  `;
+
+  // Gráfico de barras
+  const labels = (s.ultimos_7_dias || []).map(d => d.label);
+  const data   = (s.ultimos_7_dias || []).map(d => d.ventas);
+  const bgs    = data.map((_, i) =>
+    i === data.length - 1 ? '#16a34a' : '#bbf7d0'
+  );
+
+  if (ventasChart) { ventasChart.destroy(); ventasChart = null; }
+
+  ventasChart = new Chart(
+    document.getElementById('ventasChart').getContext('2d'),
+    {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ data, backgroundColor: bgs, borderRadius: 8, borderSkipped: false }],
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: { callbacks: { label: ctx => '$' + ctx.parsed.y.toFixed(2) } },
+        },
+        scales: {
+          x: {
+            grid: { display: false },
+            ticks: { font: { size: 11, weight: '600' }, color: '#94a3b8' },
+          },
+          y: {
+            grid: { color: '#f1f5f9' },
+            ticks: { font: { size: 11 }, color: '#94a3b8', callback: v => '$' + v },
+            beginAtZero: true,
+          },
+        },
+      },
+    }
+  );
+}
+
+/* ── RANKINGS ── */
+function rankBadge(i) {
+  const styles = [
+    { bg: '#fef3c7', color: '#d97706' },
+    { bg: '#f1f5f9', color: '#475569' },
+    { bg: '#fce7f3', color: '#db2777' },
+    { bg: '#f8fafc', color: '#94a3b8' },
+    { bg: '#f8fafc', color: '#94a3b8' },
+  ];
+  const s = styles[i] || styles[4];
+  return `style="background:${s.bg};color:${s.color}"`;
+}
+
+function renderRankings(servicios, clientes) {
+  $('topServicios').innerHTML = `
+    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Top 5 Servicios</p>
+    ${servicios.length === 0
+      ? '<p class="text-sm text-slate-400 italic">Sin datos aún</p>'
+      : servicios.map((s, i) => `
+        <div class="flex items-center gap-3 ${i > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0"
+                ${rankBadge(i)}>${i + 1}</span>
+          <span class="text-sm font-semibold text-slate-700 flex-1 truncate">${s.nombre}</span>
+          <span class="text-sm font-black" style="color:#3b82f6">${s.cantidad}×</span>
+        </div>`).join('')
+    }
+  `;
+
+  $('topClientes').innerHTML = `
+    <p class="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">Top 5 Clientes</p>
+    ${clientes.length === 0
+      ? '<p class="text-sm text-slate-400 italic">Sin datos aún</p>'
+      : clientes.map((c, i) => `
+        <div class="flex items-center gap-3 ${i > 0 ? 'mt-3 pt-3 border-t border-slate-100' : ''}">
+          <span class="w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black shrink-0"
+                ${rankBadge(i)}>${i + 1}</span>
+          <span class="text-sm font-semibold text-slate-700 flex-1 truncate">${c.nombre}</span>
+          <span class="text-sm font-black" style="color:#8b5cf6">${c.ordenes} órd.</span>
+        </div>`).join('')
+    }
+  `;
+}
+
+cargarTodo();
+setInterval(cargarTodo, 30000);
 </script>
 {% endblock %}

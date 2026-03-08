@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% block title %}Perfil de Cliente - {{ lavanderia.nombre }}{% endblock %}
+
+{% block content %}
+
+<!-- Back + título -->
+<div class="flex items-center gap-3 mb-5">
+    <a href="/clientes"
+       class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-all"
+       style="background:#f1f5f9">
+        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+        </svg>
+    </a>
+    <div>
+        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight leading-tight">Perfil</h1>
+        <p class="text-xs text-slate-400 font-medium">Historial del cliente</p>
+    </div>
+</div>
+
+<!-- Skeleton inicial -->
+<div id="perfil-content">
+    <div class="card p-5 mb-4 space-y-3">
+        <div class="skeleton h-4 w-40"></div>
+        <div class="skeleton h-3 w-28"></div>
+        <div class="skeleton h-3 w-32"></div>
+    </div>
+    <div class="grid grid-cols-2 gap-3 mb-4">
+        <div class="card p-4 skeleton h-20"></div>
+        <div class="card p-4 skeleton h-20"></div>
+        <div class="card p-4 skeleton h-20"></div>
+        <div class="card p-4 skeleton h-20"></div>
+    </div>
+    <div class="space-y-3">
+        <div class="card p-4 skeleton h-16"></div>
+        <div class="card p-4 skeleton h-16"></div>
+        <div class="card p-4 skeleton h-16"></div>
+    </div>
+</div>
+
+<script>
+const CLIENTE_ID = {{ cliente_id }};
+
+const ESTATUS_CONFIG = {
+    recibido:   { label: 'Recibido',   bg: '#eff6ff', color: '#2563eb' },
+    en_proceso: { label: 'En proceso', bg: '#fff7ed', color: '#ea580c' },
+    listo:      { label: 'Listo',      bg: '#f0fdf4', color: '#16a34a' },
+    entregado:  { label: 'Entregado',  bg: '#f8fafc', color: '#64748b' },
+};
+
+function fmtFecha(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleDateString('es-PA', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function fmtMoneda(n) {
+    return '$' + Number(n).toFixed(2);
+}
+
+async function cargarPerfil() {
+    const res = await fetch(`/api/clientes/${CLIENTE_ID}/perfil`);
+    if (!res.ok) {
+        document.getElementById('perfil-content').innerHTML = `
+            <div class="card p-8 text-center">
+                <p class="font-bold text-slate-700">Cliente no encontrado</p>
+                <a href="/clientes" class="text-sm text-brand-600 font-semibold mt-2 inline-block">← Volver</a>
+            </div>`;
+        return;
+    }
+    const { cliente, estadisticas: e, ultimas_ordenes } = await res.json();
+    const st = e;
+
+    document.getElementById('perfil-content').innerHTML = `
+
+        <!-- ── Tarjeta cliente ── -->
+        <div class="card p-5 mb-4">
+            <div class="flex items-start justify-between gap-3 mb-3">
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <p class="font-extrabold text-slate-900 text-lg leading-tight">${cliente.nombre}</p>
+                        ${st.es_frecuente ? `
+                        <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide"
+                              style="background:linear-gradient(135deg,#fef9c3,#fef08a);color:#854d0e">
+                            ★ Frecuente
+                        </span>` : ''}
+                    </div>
+                    <a href="tel:${cliente.telefono}"
+                       class="flex items-center gap-1.5 text-sm font-semibold w-fit"
+                       style="color:#16a34a">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                        </svg>
+                        ${cliente.telefono}
+                    </a>
+                    ${cliente.direccion ? `<p class="text-xs text-slate-400 font-medium mt-1">${cliente.direccion}</p>` : ''}
+                    ${cliente.notas ? `<p class="text-xs text-slate-400 italic mt-0.5">${cliente.notas}</p>` : ''}
+                </div>
+                <a href="/nueva-orden?cliente_id=${cliente.id}&nombre=${encodeURIComponent(cliente.nombre)}&telefono=${encodeURIComponent(cliente.telefono)}"
+                   class="shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold transition-all"
+                   style="background:linear-gradient(135deg,#16a34a,#15803d);color:white;box-shadow:0 3px 12px rgba(22,163,74,0.30)">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    Orden
+                </a>
+            </div>
+
+            ${st.saldo_pendiente > 0 ? `
+            <!-- Saldo pendiente -->
+            <div class="rounded-2xl p-3.5 flex items-center gap-3 mt-1" style="background:#fef2f2">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style="background:#fee2e2">
+                    <svg class="w-5 h-5" style="color:#dc2626" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                </div>
+                <div class="flex-1">
+                    <p class="font-bold text-sm" style="color:#dc2626">Saldo pendiente</p>
+                    <p class="text-xs font-medium" style="color:#ef4444">Tiene órdenes sin pagar</p>
+                </div>
+                <p class="text-2xl font-black" style="color:#dc2626;font-feature-settings:'tnum'">${fmtMoneda(st.saldo_pendiente)}</p>
+            </div>` : `
+            <div class="rounded-2xl p-3 flex items-center gap-2.5 mt-1" style="background:#f0fdf4">
+                <svg class="w-4 h-4 shrink-0" style="color:#16a34a" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                </svg>
+                <p class="text-xs font-semibold" style="color:#15803d">Al día — sin saldo pendiente</p>
+            </div>`}
+        </div>
+
+        <!-- ── Estadísticas ── -->
+        <div class="grid grid-cols-2 gap-3 mb-4">
+            <div class="card p-4 flex flex-col gap-1">
+                <p class="text-2xl font-black text-slate-900">${st.total_ordenes}</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Total órdenes</p>
+            </div>
+            <div class="card p-4 flex flex-col gap-1">
+                <p class="text-2xl font-black text-slate-900" style="font-feature-settings:'tnum'">${fmtMoneda(st.total_gastado)}</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Total gastado</p>
+            </div>
+            <div class="card p-4 flex flex-col gap-1">
+                <p class="text-sm font-bold text-slate-700">${fmtFecha(st.primera_visita)}</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Primera visita</p>
+            </div>
+            <div class="card p-4 flex flex-col gap-1">
+                <p class="text-sm font-bold text-slate-700">${fmtFecha(st.ultima_visita)}</p>
+                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Última visita</p>
+            </div>
+        </div>
+
+        <!-- ── Últimas órdenes ── -->
+        ${ultimas_ordenes.length === 0 ? `
+        <div class="card p-6 text-center">
+            <p class="font-semibold text-slate-500">Sin órdenes registradas</p>
+        </div>` : `
+        <p class="section-label mb-3">Últimas órdenes</p>
+        <div class="space-y-2.5">
+            ${ultimas_ordenes.map(o => {
+                const cfg = ESTATUS_CONFIG[o.estatus] || ESTATUS_CONFIG.recibido;
+                const saldo = Math.max(0, parseFloat(o.precio_total || 0) - parseFloat(o.total_pagado || 0));
+                return `
+                <div class="card p-4">
+                    <div class="flex items-center justify-between gap-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-[11px] font-bold px-2.5 py-1 rounded-full"
+                                      style="background:${cfg.bg};color:${cfg.color}">${cfg.label}</span>
+                                ${saldo > 0 ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full" style="background:#fef2f2;color:#dc2626">$${saldo.toFixed(2)} pendiente</span>` : ''}
+                            </div>
+                            <p class="text-xs text-slate-400 font-medium">${fmtFecha(o.created_at)}</p>
+                            ${o.nombres_servicios ? `<p class="text-xs text-slate-500 font-medium mt-0.5 truncate">${o.nombres_servicios}</p>` : ''}
+                        </div>
+                        <p class="font-black text-slate-900 shrink-0" style="font-feature-settings:'tnum'">${fmtMoneda(o.precio_total)}</p>
+                    </div>
+                </div>`;
+            }).join('')}
+        </div>`}
+    `;
+}
+
+cargarPerfil();
+</script>
+
+{% endblock %}

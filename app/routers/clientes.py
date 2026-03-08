@@ -33,6 +33,48 @@ async def listar_clientes(buscar: Optional[str] = None):
     return result.data
 
 
+@router.get("/{cliente_id}/perfil")
+async def perfil_cliente(cliente_id: int):
+    """Perfil completo del cliente: datos, estadísticas y últimas 10 órdenes."""
+    db = get_supabase()
+
+    cliente_res = db.table("clientes").select("*").eq("id", cliente_id).execute()
+    if not cliente_res.data:
+        raise HTTPException(status_code=404, detail="Cliente no encontrado")
+    cliente = cliente_res.data[0]
+
+    ordenes_res = (
+        db.table("vista_ordenes")
+        .select("id,estatus,precio_total,total_pagado,created_at,nombres_servicios,kilos")
+        .eq("cliente_id", cliente_id)
+        .order("created_at", desc=True)
+        .execute()
+    )
+    ordenes = ordenes_res.data or []
+
+    total_ordenes = len(ordenes)
+    total_gastado = sum(float(o.get("precio_total") or 0) for o in ordenes)
+    total_pagado_sum = sum(float(o.get("total_pagado") or 0) for o in ordenes)
+    saldo_pendiente = total_gastado - total_pagado_sum
+
+    fechas = sorted([o["created_at"] for o in ordenes if o.get("created_at")])
+    primera_visita = fechas[0] if fechas else None
+    ultima_visita = fechas[-1] if fechas else None
+
+    return {
+        "cliente": cliente,
+        "estadisticas": {
+            "total_ordenes": total_ordenes,
+            "total_gastado": round(total_gastado, 2),
+            "saldo_pendiente": round(saldo_pendiente, 2),
+            "es_frecuente": total_ordenes > 10,
+            "primera_visita": primera_visita,
+            "ultima_visita": ultima_visita,
+        },
+        "ultimas_ordenes": ordenes[:10],
+    }
+
+
 @router.get("/{cliente_id}")
 async def obtener_cliente(cliente_id: int):
     db = get_supabase()

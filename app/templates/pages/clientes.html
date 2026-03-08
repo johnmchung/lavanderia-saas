@@ -63,14 +63,14 @@ function renderClientes(clientes) {
     }
 
     lista.innerHTML = clientes.map(c => `
-        <div class="card p-4 flex items-center justify-between">
-            <div>
-                <p class="font-semibold text-gray-800">${c.nombre}</p>
-                <p class="text-sm text-gray-400">${c.telefono}</p>
-                ${c.direccion ? `<p class="text-xs text-gray-400 mt-0.5">${c.direccion}</p>` : ''}
-            </div>
+        <div class="card p-4 flex items-center justify-between card-press">
+            <a href="/clientes/${c.id}" class="flex-1 min-w-0 mr-3">
+                <p class="font-semibold text-slate-800">${c.nombre}</p>
+                <p class="text-sm text-slate-400">${c.telefono}</p>
+                ${c.direccion ? `<p class="text-xs text-slate-400 mt-0.5">${c.direccion}</p>` : ''}
+            </a>
             <a href="/nueva-orden?cliente_id=${c.id}&nombre=${encodeURIComponent(c.nombre)}&telefono=${encodeURIComponent(c.telefono)}"
-               class="flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium"
+               class="shrink-0 flex items-center gap-1 px-3 py-2 rounded-xl text-sm font-medium"
                style="background:#f0fdf4;color:#16a34a">
                 + Orden
             </a>

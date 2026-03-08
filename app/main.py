@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from app.routers import ordenes, clientes, dashboard, servicios
+from app.routers import ordenes, clientes, dashboard, servicios, reportes
 from app.config import get_lavanderia_data
 
 app = FastAPI(title="Lavandería SaaS", version="1.0.0")
@@ -15,6 +15,7 @@ app.include_router(ordenes.router, prefix="/api/ordenes", tags=["ordenes"])
 app.include_router(clientes.router, prefix="/api/clientes", tags=["clientes"])
 app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"])
 app.include_router(servicios.router, prefix="/api/servicios", tags=["servicios"])
+app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 
 
 # ---- Páginas HTML ----
@@ -43,6 +44,15 @@ async def pagina_clientes(request: Request):
     })
 
 
+@app.get("/clientes/{cliente_id}")
+async def pagina_perfil_cliente(request: Request, cliente_id: int):
+    return templates.TemplateResponse("pages/perfil_cliente.html", {
+        "request": request,
+        "lavanderia": get_lavanderia_data(),
+        "cliente_id": cliente_id,
+    })
+
+
 @app.get("/servicios")
 async def pagina_servicios(request: Request):
     return templates.TemplateResponse("pages/servicios.html", {
@@ -54,6 +64,14 @@ async def pagina_servicios(request: Request):
 @app.get("/dashboard")
 async def pagina_dashboard(request: Request):
     return templates.TemplateResponse("pages/dashboard.html", {
+        "request": request,
+        "lavanderia": get_lavanderia_data(),
+    })
+
+
+@app.get("/deudas")
+async def pagina_deudas(request: Request):
+    return templates.TemplateResponse("pages/deudas.html", {
         "request": request,
         "lavanderia": get_lavanderia_data(),
     })
