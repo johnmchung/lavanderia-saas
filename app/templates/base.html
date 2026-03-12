@@ -149,12 +149,61 @@
             </div>
             <div class="leading-tight">
                 <p class="font-extrabold text-slate-900 text-[15px] tracking-tight">{{ lavanderia.nombre }}</p>
-                <p class="text-[10px] font-semibold text-slate-400 -mt-0.5">Lavandería</p>
+                <p class="text-[10px] font-semibold text-slate-400 -mt-0.5">
+                    {% if current_user is defined %}
+                        {% if current_user.rol == 'superadmin' %}Superadmin
+                        {% elif current_user.rol == 'owner' %}Dueño
+                        {% else %}Empleado{% endif %}
+                    {% else %}Lavandería{% endif %}
+                </p>
             </div>
         </div>
-        <div id="fecha-header" class="text-[11px] font-semibold text-slate-400 capitalize text-right"></div>
+        <div class="flex items-center gap-3">
+            <div id="fecha-header" class="text-[11px] font-semibold text-slate-400 capitalize text-right"></div>
+            {% if current_user is defined %}
+            <form method="POST" action="/logout">
+                <button type="submit"
+                        title="Cerrar sesión"
+                        class="w-9 h-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors">
+                    <svg class="w-[18px] h-[18px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </button>
+            </form>
+            {% endif %}
+        </div>
     </div>
 </header>
+
+<!-- ─── Banner de impersonación ─── -->
+{% if current_user is defined and current_user._impersonando is defined and current_user._impersonando %}
+<div class="sticky top-[57px] z-30 w-full"
+     style="background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 2px 12px rgba(37,99,235,0.30)">
+    <div class="max-w-lg mx-auto px-4 py-2.5 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2 min-w-0">
+            <svg class="w-4 h-4 text-blue-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+            <p class="text-xs font-bold text-white truncate">
+                Viendo como owner · Lavandería {{ current_user._impersonate_lavanderia_id }}
+            </p>
+        </div>
+        <form method="POST" action="/api/admin/impersonate/stop" class="shrink-0">
+            <button type="submit"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-blue-800 bg-white hover:bg-blue-50 transition-colors">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                Salir
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
 
 <!-- ─── Main ─── -->
 <main class="pb-28 px-4 pt-5 max-w-lg mx-auto">
@@ -162,6 +211,7 @@
 </main>
 
 <!-- ─── Bottom nav ─── -->
+{% block bottomnav %}
 <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50"
      style="padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -1px 20px rgba(0,0,0,0.06)">
     <div class="max-w-lg mx-auto flex justify-around items-center h-16">
@@ -213,6 +263,7 @@
             </div>
         </a>
 
+        {% if not current_user is defined or current_user.rol != 'employee' %}
         <a href="/servicios" class="flex flex-col items-center justify-center flex-1 h-full gap-0.5 relative
             {% if request.url.path == '/servicios' %}nav-active{% else %}nav-inactive{% endif %}">
             {% if request.url.path == '/servicios' %}<span class="nav-dot"></span>{% endif %}
@@ -242,9 +293,11 @@
             </svg>
             <span class="text-[11px] font-{% if request.url.path == '/deudas' %}bold{% else %}semibold{% endif %}">Deudas</span>
         </a>
+        {% endif %}
 
     </div>
 </nav>
+{% endblock %}
 
 <script>
     const hoy = new Date();

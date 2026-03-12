@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar sesión</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50:  '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0',
+                            300: '#86efac', 400: '#4ade80', 500: '#22c55e',
+                            600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d',
+                        }
+                    },
+                    fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; }
+        * { -webkit-font-smoothing: antialiased; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: #f1f5f9; min-height: 100vh; }
+
+        .card {
+            background: #ffffff;
+            border-radius: 24px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.04), 0 8px 32px rgba(0,0,0,0.08);
+        }
+        .input-field {
+            width: 100%; padding: 14px 16px; border-radius: 14px;
+            border: 1.5px solid #e2e8f0; font-size: 1rem; font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+            background: #ffffff; color: #0f172a;
+        }
+        .input-field:focus { border-color: #16a34a; box-shadow: 0 0 0 4px rgba(22,163,74,0.10); }
+        .input-field::placeholder { color: #94a3b8; }
+        .btn-primary {
+            background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+            color: white; border-radius: 14px; padding: 15px 20px;
+            font-weight: 700; font-size: 1rem; width: 100%;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            border: none; box-shadow: 0 4px 16px rgba(22,163,74,0.30);
+            letter-spacing: -0.01em;
+        }
+        .btn-primary:hover  { box-shadow: 0 6px 22px rgba(22,163,74,0.40); transform: translateY(-1px); }
+        .btn-primary:active { transform: translateY(0); box-shadow: 0 2px 8px rgba(22,163,74,0.20); }
+        .btn-primary:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; transform: none; }
+    </style>
+</head>
+<body class="flex items-center justify-center min-h-screen px-4">
+
+<div class="w-full max-w-sm">
+
+    <!-- Logo -->
+    <div class="flex flex-col items-center mb-8">
+        <div class="w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+             style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);box-shadow:0 6px 24px rgba(22,163,74,0.35)">
+            <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="3" stroke-width="2"/>
+                <circle cx="12" cy="13" r="4" stroke-width="2"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M9.5 7h.01"/>
+            </svg>
+        </div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Lavandería SaaS</h1>
+        <p class="text-sm text-slate-500 mt-1">Ingresa con tu cuenta para continuar</p>
+    </div>
+
+    <!-- Card del formulario -->
+    <div class="card p-6">
+
+        {% if error_msg %}
+        <div class="mb-5 px-4 py-3 rounded-xl text-sm font-semibold text-red-700"
+             style="background:#fef2f2;border:1.5px solid #fecaca">
+            {{ error_msg }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/login" id="login-form">
+            <div class="flex flex-col gap-4">
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Correo electrónico
+                    </label>
+                    <input
+                        type="email"
+                        name="email"
+                        class="input-field"
+                        placeholder="tu@correo.com"
+                        autocomplete="email"
+                        required
+                    >
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                        Contraseña
+                    </label>
+                    <input
+                        type="password"
+                        name="password"
+                        class="input-field"
+                        placeholder="••••••••"
+                        autocomplete="current-password"
+                        required
+                    >
+                </div>
+
+                <button type="submit" class="btn-primary mt-2" id="btn-login">
+                    Iniciar sesión
+                </button>
+
+            </div>
+        </form>
+
+    </div>
+
+    <p class="text-center text-xs text-slate-400 mt-6">
+        Acceso solo para personal autorizado.
+    </p>
+
+</div>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', function() {
+        const btn = document.getElementById('btn-login');
+        btn.disabled = true;
+        btn.textContent = 'Verificando...';
+    });
+</script>
+
+</body>
+</html>

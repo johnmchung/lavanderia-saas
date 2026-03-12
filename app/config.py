@@ -16,6 +16,13 @@ def get_supabase() -> Client:
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
+def get_supabase_with_token(token: str) -> Client:
+    """Cliente Supabase autenticado con el JWT del usuario (para respetar RLS en usuarios)."""
+    client = create_client(SUPABASE_URL, SUPABASE_KEY)
+    client.postgrest.auth(token)
+    return client
+
+
 def get_lavanderia_data() -> dict:
     """Obtiene los datos de la lavandería activa desde la BD.
     Si falla (tabla no existe aún, error de red, etc.), usa variables de entorno como fallback."""

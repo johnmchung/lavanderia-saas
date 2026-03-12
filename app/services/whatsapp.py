@@ -45,6 +45,18 @@ async def enviar_notificacion_listo(
     return await _enviar_whatsapp(telefono, mensaje)
 
 
+async def enviar_recordatorio_vencimiento(
+    telefono: str, nombre_lavanderia: str, dias: int, template: str
+):
+    """Recordatorio de vencimiento de suscripción al owner."""
+    mensaje = template.format(
+        nombre=nombre_lavanderia,
+        lavanderia=nombre_lavanderia,
+        dias=dias,
+    )
+    return await _enviar_whatsapp(telefono, mensaje)
+
+
 async def enviar_notificacion_sastreria_lista(
     telefono: str, nombre_cliente: str, trabajo_id: int, prenda: str
 ):

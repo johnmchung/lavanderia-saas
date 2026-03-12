@@ -1,0 +1,1089 @@
+{% extends "base.html" %}
+
+{% block title %}Panel SaaS — Superadmin{% endblock %}
+
+{% block bottomnav %}{% endblock %}
+
+{% block content %}
+
+<!-- ── Header ─────────────────────────────────────────────────────────── -->
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-xl font-extrabold text-slate-900 tracking-tight">Panel SaaS</h1>
+        <p class="text-xs text-slate-400 mt-0.5">{{ current_user.email }}</p>
+    </div>
+    <span class="px-3 py-1 rounded-full text-xs font-bold text-white"
+          style="background:linear-gradient(135deg,#16a34a,#15803d)">Superadmin</span>
+</div>
+
+<!-- ── Navegación de tabs ──────────────────────────────────────────────── -->
+<div class="flex gap-1 bg-slate-100 rounded-2xl p-1 mb-5 overflow-x-auto">
+    {% for tab_id, tab_label in [('metricas','Métricas'),('lavanderias','Lavanderías'),('facturacion','Facturación'),('config','Config')] %}
+    <button id="tab-btn-{{ tab_id }}"
+            onclick="showTab('{{ tab_id }}')"
+            class="flex-1 min-w-max py-2 px-3 rounded-xl text-xs font-bold transition-all">
+        {{ tab_label }}
+    </button>
+    {% endfor %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB 1: MÉTRICAS                                                     -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="tab-metricas">
+
+    <!-- MRR destacado -->
+    <div class="card p-5 mb-3 text-center"
+         style="background:linear-gradient(135deg,#16a34a,#15803d)">
+        <p class="text-xs font-bold text-green-200 uppercase tracking-widest mb-1">MRR</p>
+        <p id="stat-mrr" class="text-4xl font-extrabold text-white">—</p>
+        <p class="text-xs text-green-200 mt-1">Ingresos recurrentes mensuales</p>
+    </div>
+
+    <!-- KPIs grid -->
+    <div class="grid grid-cols-3 gap-2 mb-3">
+        <div class="card p-3 text-center">
+            <p id="stat-activas" class="text-2xl font-extrabold text-green-600">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Activas</p>
+        </div>
+        <div class="card p-3 text-center">
+            <p id="stat-trial" class="text-2xl font-extrabold text-blue-500">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Trial</p>
+        </div>
+        <div class="card p-3 text-center">
+            <p id="stat-inactivas" class="text-2xl font-extrabold text-slate-400">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Vencidas</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-2 mb-3">
+        <div class="card p-4 text-center">
+            <p id="stat-ordenes-hoy" class="text-2xl font-extrabold text-blue-600">—</p>
+            <p class="text-xs font-semibold text-slate-400 mt-0.5">Órdenes hoy</p>
+        </div>
+        <div class="card p-4 text-center">
+            <p id="stat-ventas-hoy" class="text-2xl font-extrabold text-emerald-600">—</p>
+            <p class="text-xs font-semibold text-slate-400 mt-0.5">Ventas hoy</p>
+        </div>
+    </div>
+
+    <!-- Top 3 -->
+    <div class="card p-4 mb-3">
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Top lavanderías · mes actual</p>
+        <div id="top3-lista">
+            <p class="text-xs text-slate-300 text-center py-2">Cargando…</p>
+        </div>
+    </div>
+
+    <!-- Alertas -->
+    <div id="section-vencidas" class="mb-3 hidden">
+        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
+            <p class="text-xs font-bold text-amber-700 mb-2">Pago vencido / por vencer</p>
+            <div id="lista-vencidas" class="flex flex-col gap-1"></div>
+        </div>
+    </div>
+
+    <div id="section-sin-actividad" class="mb-5 hidden">
+        <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
+            <p class="text-xs font-bold text-red-600 mb-2">Sin actividad — últimos 7 días</p>
+            <div id="sin-actividad-lista" class="flex flex-col gap-1"></div>
+        </div>
+    </div>
+
+</div><!-- /tab-metricas -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB 2: LAVANDERÍAS                                                  -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="tab-lavanderias" class="hidden">
+
+    <div class="flex items-center justify-between mb-3">
+        <p class="section-label" style="margin-bottom:0;flex:1">Lavanderías registradas</p>
+        <button onclick="abrirModal()"
+                class="ml-4 flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-sm font-bold shrink-0"
+                style="background:linear-gradient(135deg,#16a34a,#15803d);box-shadow:0 4px 14px rgba(22,163,74,0.30)">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nueva
+        </button>
+    </div>
+
+    <div class="flex flex-col gap-3">
+        {% if lavanderias %}
+            {% for lav in lavanderias %}
+            {% set estatus = lav.estatus_suscripcion or 'activa' %}
+            <div class="card p-4" id="card-lav-{{ lav.id }}">
+
+                <!-- Info row (clickable para expandir) -->
+                <div class="flex items-start justify-between gap-3 cursor-pointer select-none"
+                     onclick="toggleExpandCard({{ lav.id }})">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                             style="background:linear-gradient(135deg,{{ lav.color_primario or '#16a34a' }},{{ lav.color_primario or '#15803d' }}cc)">
+                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <rect x="3" y="3" width="18" height="18" rx="3" stroke-width="2"/>
+                                <circle cx="12" cy="13" r="4" stroke-width="2"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M7 7h.01M9.5 7h.01"/>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-bold text-slate-900 text-sm truncate">{{ lav.nombre }}</p>
+                            <p class="text-xs text-slate-400">
+                                ID {{ lav.id }}{% if lav.ciudad %} · {{ lav.ciudad }}{% endif %}
+                            </p>
+                            <p class="text-xs text-slate-400 mt-0.5">
+                                {{ lav.ordenes_mes or 0 }} órd. este mes
+                            </p>
+                        </div>
+                    </div>
+                    <!-- Estatus badge + chevron -->
+                    <div class="shrink-0 flex flex-col items-end gap-1">
+                        {% if estatus == 'trial' %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-blue-700 bg-blue-50">Trial</span>
+                        {% elif estatus == 'activa' %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-green-700 bg-green-50">Activa</span>
+                        {% elif estatus == 'vencida' %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-amber-700 bg-amber-50">Vencida</span>
+                        {% else %}
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold text-red-700 bg-red-50">Suspendida</span>
+                        {% endif %}
+                        {% if lav.fecha_vencimiento_plan %}
+                        <p class="text-[10px] text-slate-400">
+                            Vence: {{ lav.fecha_vencimiento_plan[:10] }}
+                        </p>
+                        {% endif %}
+                        <svg id="chevron-{{ lav.id }}" class="w-3.5 h-3.5 text-slate-300 mt-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Sección expandible -->
+                <div id="expand-{{ lav.id }}" class="hidden mt-3 pt-3 border-t border-slate-100">
+                    <div id="expand-content-{{ lav.id }}">
+                        <p class="text-xs text-slate-300 text-center py-2">Cargando…</p>
+                    </div>
+                </div>
+
+                <!-- Acciones -->
+                <div class="flex gap-1.5 mt-3 pt-3 border-t border-slate-100 flex-wrap">
+                    {% if lav.owner_email %}
+                    <form method="POST" action="/api/admin/impersonate/{{ lav.id }}" class="flex-1 min-w-[80px]">
+                        <button type="submit"
+                                class="w-full flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-blue-600 bg-blue-50 hover:bg-blue-100 transition-colors">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0zM2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                            </svg>
+                            Ver
+                        </button>
+                    </form>
+                    {% else %}
+                    <button onclick="abrirModalOwner({{ lav.id }}, '{{ lav.nombre | replace("'", "\\'") }}')"
+                            class="flex-1 min-w-[80px] flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-purple-600 bg-purple-50 hover:bg-purple-100 transition-colors">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                        </svg>
+                        Owner
+                    </button>
+                    {% endif %}
+
+                    <button onclick="toggleLavanderia({{ lav.id }}, {{ 'true' if lav.activo else 'false' }})"
+                            id="btn-toggle-{{ lav.id }}"
+                            class="flex-1 min-w-[80px] flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold transition-colors
+                                   {{ 'text-red-600 bg-red-50 hover:bg-red-100' if lav.activo else 'text-green-600 bg-green-50 hover:bg-green-100' }}">
+                        {% if lav.activo %}Suspender{% else %}Activar{% endif %}
+                    </button>
+
+                    <button onclick="abrirModalPago({{ lav.id }}, '{{ lav.nombre | replace("'", "\\'") }}')"
+                            class="flex-1 min-w-[80px] flex items-center justify-center gap-1 py-2 rounded-xl text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                        Pago
+                    </button>
+
+                    <button onclick="confirmarEliminar({{ lav.id }}, '{{ lav.nombre | replace("'", "\\'") }}')"
+                            class="flex items-center justify-center w-9 py-2 rounded-xl text-[11px] font-bold text-slate-400 bg-slate-50 hover:bg-red-50 hover:text-red-500 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="card p-8 text-center">
+                <p class="text-slate-400 text-sm">No hay lavanderías registradas.</p>
+            </div>
+        {% endif %}
+    </div>
+
+</div><!-- /tab-lavanderias -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB 3: FACTURACIÓN                                                  -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="tab-facturacion" class="hidden">
+
+    <!-- Resumen mes -->
+    <div class="grid grid-cols-2 gap-3 mb-3">
+        <div class="card p-4 text-center">
+            <p id="bill-cobrado" class="text-2xl font-extrabold text-green-600">—</p>
+            <p class="text-xs font-semibold text-slate-400 mt-0.5">Cobrado este mes</p>
+        </div>
+        <div class="card p-4 text-center">
+            <p id="bill-pendiente" class="text-2xl font-extrabold text-amber-500">—</p>
+            <p class="text-xs font-semibold text-slate-400 mt-0.5">Pendiente de cobro</p>
+        </div>
+    </div>
+
+    <!-- Pendientes -->
+    <div class="mb-3">
+        <p class="section-label mb-2">Cobros pendientes</p>
+        <div id="bill-pendientes-lista" class="flex flex-col gap-2">
+            <p class="text-xs text-slate-300 text-center py-4">Cargando…</p>
+        </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="mb-5">
+        <p class="section-label mb-2">Historial de pagos</p>
+        <div class="card overflow-hidden">
+            <div id="bill-historial" class="divide-y divide-slate-50">
+                <p class="text-xs text-slate-300 text-center py-4">Cargando…</p>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /tab-facturacion -->
+
+
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<!-- TAB 4: CONFIGURACIÓN                                                -->
+<!-- ════════════════════════════════════════════════════════════════════ -->
+<div id="tab-config" class="hidden">
+
+    <form id="form-config" onsubmit="guardarConfig(event)" class="flex flex-col gap-4">
+
+        <div>
+            <p class="section-label mb-3">Precios de planes</p>
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Plan mensual (USD/mes)</label>
+                    <input name="precio_mensual" id="cfg-precio-mensual" type="number" step="0.01"
+                           class="input-field" placeholder="25.00">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Plan anual (USD/año)</label>
+                    <input name="precio_anual" id="cfg-precio-anual" type="number" step="0.01"
+                           class="input-field" placeholder="250.00">
+                </div>
+            </div>
+        </div>
+
+        <div>
+            <p class="section-label mb-3">Recordatorio WhatsApp</p>
+            <div>
+                <label class="block text-xs font-bold text-slate-600 mb-1.5">
+                    Mensaje al vencer en 3 días
+                    <span class="font-normal text-slate-400">({nombre}, {lavanderia}, {dias})</span>
+                </label>
+                <textarea name="mensaje_vencimiento_whatsapp" id="cfg-msg-wa" rows="4"
+                          class="input-field resize-none"
+                          placeholder="Hola {nombre}, tu suscripción…"></textarea>
+            </div>
+            <button type="button" onclick="notificarVencimientos()"
+                    class="mt-2 w-full flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold text-green-700 bg-green-50 hover:bg-green-100 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                </svg>
+                Enviar recordatorios ahora
+            </button>
+        </div>
+
+        <div>
+            <p class="section-label mb-3">Mis datos de contacto</p>
+            <div class="flex flex-col gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Nombre / empresa</label>
+                    <input name="contacto_nombre" id="cfg-contacto-nombre" type="text"
+                           class="input-field" placeholder="Soporte SaaS">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1.5">Teléfono WhatsApp</label>
+                    <input name="contacto_telefono" id="cfg-contacto-telefono" type="tel"
+                           class="input-field" placeholder="+507 6000-0000">
+                </div>
+            </div>
+        </div>
+
+        <button type="submit" id="btn-guardar-config" class="btn-primary">
+            Guardar configuración
+        </button>
+    </form>
+
+</div><!-- /tab-config -->
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Nueva lavandería                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="modal-nueva"
+     class="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 hidden">
+    <div class="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl flex flex-col" style="max-height:90vh">
+
+        <!-- Vista: formulario -->
+        <div id="modal-form-view">
+            <form id="form-nueva-lav" onsubmit="submitNuevaLavanderia(event)" class="flex flex-col" style="max-height:90vh">
+
+                <div class="flex-shrink-0 flex items-center justify-between p-4 border-b">
+                    <h2 class="text-lg font-extrabold text-slate-900">Nueva Lavandería</h2>
+                    <button type="button" onclick="cerrarModal()" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <div class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">Nombre *</label>
+                        <input name="nombre" type="text" placeholder="Lavandería Rápida Norte" class="input-field" required>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Teléfono</label>
+                            <input name="telefono" type="tel" placeholder="+507 6000-0000" class="input-field">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Ciudad</label>
+                            <input name="ciudad" type="text" placeholder="Panamá" class="input-field">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">Dirección</label>
+                        <input name="direccion" type="text" placeholder="Calle, ciudad" class="input-field">
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Plan</label>
+                            <select name="plan" class="input-field">
+                                <option value="trial">Trial 14 días</option>
+                                <option value="mensual">Mensual $25</option>
+                                <option value="anual">Anual $250</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Color</label>
+                            <input name="color_primario" type="color" value="#16a34a"
+                                   class="w-full h-[50px] rounded-xl border-2 border-slate-200 cursor-pointer p-1">
+                        </div>
+                    </div>
+                    <div class="pt-2 border-t border-slate-100">
+                        <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Owner</p>
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Email *</label>
+                                <input name="owner_email" type="email" placeholder="dueno@ejemplo.com" class="input-field" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">
+                                    Contraseña <span class="font-normal text-slate-400">(auto si vacío)</span>
+                                </label>
+                                <div class="flex gap-2">
+                                    <input name="owner_password" id="input-password" type="text"
+                                           placeholder="Auto-generar" class="input-field" style="flex:1">
+                                    <button type="button" onclick="generarPassword()"
+                                            class="shrink-0 px-4 py-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">
+                                        Generar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex-shrink-0 p-4 border-t flex gap-3">
+                    <button type="submit" id="btn-submit-nueva" class="btn-primary flex-1">
+                        Crear Lavandería
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Vista: éxito -->
+        <div id="modal-success-view" class="hidden flex flex-col" style="max-height:90vh">
+            <div class="flex-shrink-0 flex items-center justify-between p-4 border-b">
+                <h2 class="text-lg font-extrabold text-slate-900">¡Creada!</h2>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                     style="background:linear-gradient(135deg,#16a34a,#15803d)">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-slate-500 text-center">Comparte las credenciales con el dueño.</p>
+                <div class="bg-slate-50 rounded-2xl p-4">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Credenciales</p>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between"><span class="text-xs text-slate-500">Email</span><span id="cred-email" class="text-sm font-bold text-slate-900">—</span></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">Contraseña</span>
+                            <div class="flex items-center gap-2">
+                                <span id="cred-password" class="text-sm font-bold text-slate-900 font-mono">—</span>
+                                <button onclick="copiarPassword()" class="text-xs text-blue-600 font-bold">Copiar</button>
+                            </div>
+                        </div>
+                        <div class="flex justify-between"><span class="text-xs text-slate-500">ID</span><span id="cred-id" class="text-sm font-bold text-slate-900">—</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-shrink-0 p-4 border-t">
+                <button onclick="cerrarModalYRecargar()" class="btn-primary">Cerrar y actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Crear Owner para lavandería existente                       -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="modal-owner"
+     class="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 hidden">
+    <div class="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl flex flex-col" style="max-height:85vh">
+
+        <div id="modal-owner-form-view">
+            <form id="form-owner" onsubmit="submitCrearOwner(event)" class="flex flex-col" style="max-height:85vh">
+                <input type="hidden" id="owner-lavanderia-id">
+                <div class="flex-shrink-0 flex items-center justify-between p-4 border-b">
+                    <div>
+                        <h2 class="text-lg font-extrabold text-slate-900">Crear Owner</h2>
+                        <p id="modal-owner-nombre" class="text-xs text-slate-400 mt-0.5"></p>
+                    </div>
+                    <button type="button" onclick="cerrarModalOwner()" class="text-slate-400 hover:text-slate-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">Email del dueño *</label>
+                        <input name="owner_email" type="email" placeholder="dueno@ejemplo.com" class="input-field" required>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1.5">
+                            Contraseña <span class="font-normal text-slate-400">(auto si vacío)</span>
+                        </label>
+                        <div class="flex gap-2">
+                            <input name="owner_password" id="input-owner-password" type="text"
+                                   placeholder="Auto-generar" class="input-field" style="flex:1">
+                            <button type="button" onclick="generarPasswordOwner()"
+                                    class="shrink-0 px-4 py-3 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200">
+                                Generar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 p-4 border-t flex gap-3">
+                    <button type="submit" id="btn-submit-owner" class="btn-primary flex-1">Guardar</button>
+                </div>
+            </form>
+        </div>
+
+        <div id="modal-owner-success-view" class="hidden flex flex-col" style="max-height:85vh">
+            <div class="flex-shrink-0 flex items-center justify-between p-4 border-b">
+                <h2 class="text-lg font-extrabold text-slate-900">¡Owner creado!</h2>
+            </div>
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+                <div class="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto"
+                     style="background:linear-gradient(135deg,#7c3aed,#6d28d9)">
+                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+                <p class="text-sm text-slate-500 text-center">Comparte estas credenciales con el dueño.</p>
+                <div class="bg-slate-50 rounded-2xl p-4">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Credenciales</p>
+                    <div class="flex flex-col gap-2">
+                        <div class="flex justify-between"><span class="text-xs text-slate-500">Email</span><span id="owner-cred-email" class="text-sm font-bold text-slate-900">—</span></div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">Contraseña</span>
+                            <div class="flex items-center gap-2">
+                                <span id="owner-cred-password" class="text-sm font-bold text-slate-900 font-mono">—</span>
+                                <button onclick="copiarPasswordOwner()" class="text-xs text-blue-600 font-bold">Copiar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="flex-shrink-0 p-4 border-t flex gap-3">
+                <button onclick="cerrarModalOwnerYRecargar()" class="btn-primary flex-1">Cerrar y actualizar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- MODAL: Registrar pago                                              -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<div id="modal-pago"
+     class="fixed inset-0 z-50 flex items-end md:items-center justify-center bg-black/50 hidden">
+    <div class="w-full md:max-w-lg bg-white rounded-t-2xl md:rounded-2xl flex flex-col" style="max-height:85vh">
+        <form id="form-pago" onsubmit="submitPago(event)" class="flex flex-col" style="max-height:85vh">
+            <input type="hidden" id="pago-lavanderia-id">
+
+            <div class="flex-shrink-0 flex items-center justify-between p-4 border-b">
+                <div>
+                    <h2 class="text-lg font-extrabold text-slate-900">Registrar Pago</h2>
+                    <p id="pago-lav-nombre" class="text-xs text-slate-400 mt-0.5"></p>
+                </div>
+                <button type="button" onclick="cerrarModalPago()" class="text-slate-400 hover:text-slate-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 space-y-4">
+
+                <!-- Historial de últimos pagos -->
+                <div>
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">Últimos pagos</p>
+                    <div id="historial-pagos-modal" class="rounded-xl bg-slate-50 px-3 py-2 min-h-[48px]">
+                        <p class="text-xs text-slate-300 text-center py-2">—</p>
+                    </div>
+                </div>
+
+                <div class="border-t border-slate-100 pt-4">
+                    <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Nuevo pago</p>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Monto (USD) *</label>
+                                <input name="monto" type="number" step="0.01" placeholder="25.00" class="input-field" required>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Método *</label>
+                                <select name="metodo" class="input-field" required>
+                                    <option value="yappy">Yappy</option>
+                                    <option value="nequi">Nequi</option>
+                                    <option value="efectivo">Efectivo</option>
+                                    <option value="transferencia">Transferencia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Período desde</label>
+                                <input name="periodo_desde" type="date" class="input-field">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1.5">Período hasta</label>
+                                <input name="periodo_hasta" type="date" class="input-field">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-600 mb-1.5">Notas</label>
+                            <input name="notas" type="text" placeholder="Renovación mensual…" class="input-field">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex-shrink-0 p-4 border-t flex gap-3">
+                <button type="submit" id="btn-submit-pago" class="btn-primary flex-1">Registrar pago</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<!-- SCRIPTS                                                            -->
+<!-- ═══════════════════════════════════════════════════════════════════ -->
+<script>
+// ── Tab navigation ─────────────────────────────────────────────────────────
+const TABS = ['metricas', 'lavanderias', 'facturacion', 'config'];
+let billingLoaded = false;
+let configLoaded  = false;
+
+function showTab(name) {
+    TABS.forEach(t => {
+        document.getElementById('tab-' + t).classList.toggle('hidden', t !== name);
+        const btn = document.getElementById('tab-btn-' + t);
+        if (t === name) {
+            btn.classList.add('bg-white', 'text-slate-900', 'shadow-sm');
+            btn.classList.remove('text-slate-500');
+        } else {
+            btn.classList.remove('bg-white', 'text-slate-900', 'shadow-sm');
+            btn.classList.add('text-slate-500');
+        }
+    });
+    if (name === 'facturacion' && !billingLoaded) { cargarBilling(); billingLoaded = true; }
+    if (name === 'config'      && !configLoaded)  { cargarConfig();  configLoaded  = true; }
+}
+showTab('metricas');  // default
+
+
+// ── Stats ──────────────────────────────────────────────────────────────────
+async function cargarStats() {
+    try {
+        const r = await fetch('/api/admin/stats');
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('stat-mrr').textContent       = '$' + (d.mrr ?? 0).toFixed(2);
+        document.getElementById('stat-activas').textContent   = d.total_activas;
+        document.getElementById('stat-trial').textContent     = d.total_trial;
+        document.getElementById('stat-inactivas').textContent = d.total_inactivas;
+        document.getElementById('stat-ordenes-hoy').textContent = d.total_ordenes_hoy;
+        document.getElementById('stat-ventas-hoy').textContent  = '$' + (d.total_ventas_hoy ?? 0).toFixed(2);
+
+        // Top 3
+        const top3El = document.getElementById('top3-lista');
+        if (d.top3_mes && d.top3_mes.length > 0) {
+            const medals = ['🥇', '🥈', '🥉'];
+            top3El.innerHTML = d.top3_mes.map((lav, i) => `
+                <div class="flex items-center justify-between py-1.5">
+                    <div class="flex items-center gap-2 min-w-0">
+                        <span class="text-base">${medals[i]}</span>
+                        <span class="text-sm font-semibold text-slate-700 truncate">${lav.nombre}</span>
+                    </div>
+                    <span class="text-sm font-extrabold text-slate-900 shrink-0">${lav.ordenes} órd.</span>
+                </div>`).join('');
+        } else {
+            top3El.innerHTML = '<p class="text-xs text-slate-300 text-center py-2">Sin datos este mes</p>';
+        }
+
+        // Alertas: vencidas
+        if (d.vencidas_alerta && d.vencidas_alerta.length > 0) {
+            const colors = { vencida: 'text-amber-700', suspendida: 'text-red-600' };
+            document.getElementById('lista-vencidas').innerHTML = d.vencidas_alerta.map(l =>
+                `<p class="text-xs font-semibold ${colors[l.estatus] || 'text-slate-700'}">· ${l.nombre} (${l.estatus})</p>`
+            ).join('');
+            document.getElementById('section-vencidas').classList.remove('hidden');
+        }
+
+        // Alertas: sin actividad
+        if (d.sin_actividad_7d && d.sin_actividad_7d.length > 0) {
+            document.getElementById('sin-actividad-lista').innerHTML = d.sin_actividad_7d.map(l =>
+                `<p class="text-xs font-semibold text-red-700">· ${l.nombre}</p>`
+            ).join('');
+            document.getElementById('section-sin-actividad').classList.remove('hidden');
+        }
+    } catch (e) { /* silencioso */ }
+}
+cargarStats();
+
+
+// ── Billing ────────────────────────────────────────────────────────────────
+async function cargarBilling() {
+    try {
+        const r = await fetch('/api/admin/billing');
+        if (!r.ok) return;
+        const d = await r.json();
+
+        document.getElementById('bill-cobrado').textContent   = '$' + (d.total_cobrado_mes ?? 0).toFixed(2);
+        document.getElementById('bill-pendiente').textContent = '$' + (d.total_pendiente ?? 0).toFixed(2);
+
+        // Pendientes
+        const pEl = document.getElementById('bill-pendientes-lista');
+        if (d.pendientes && d.pendientes.length > 0) {
+            pEl.innerHTML = d.pendientes.map(p => `
+                <div class="card p-3 flex items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-bold text-slate-900 truncate">${p.nombre}</p>
+                        <p class="text-xs text-red-500 font-semibold">${p.dias_vencido} día${p.dias_vencido !== 1 ? 's' : ''} vencido</p>
+                    </div>
+                    <button onclick="abrirModalPago(${p.id}, '${p.nombre.replace(/'/g,"\\'")}'); showTab('lavanderias');"
+                            class="shrink-0 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                        Cobrar
+                    </button>
+                </div>`).join('');
+        } else {
+            pEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-3">Sin cobros pendientes</p>';
+        }
+
+        // Historial
+        const hEl = document.getElementById('bill-historial');
+        if (d.historial && d.historial.length > 0) {
+            const metodoIcon = { yappy:'💳', nequi:'📱', efectivo:'💵', transferencia:'🏦' };
+            hEl.innerHTML = d.historial.map(p => `
+                <div class="flex items-center justify-between px-4 py-3">
+                    <div class="min-w-0">
+                        <p class="text-sm font-semibold text-slate-900 truncate">${p.lavanderia_nombre}</p>
+                        <p class="text-xs text-slate-400">${(p.fecha_pago||'').slice(0,10)} · ${metodoIcon[p.metodo]||''} ${p.metodo}</p>
+                    </div>
+                    <span class="text-sm font-extrabold text-green-600 shrink-0">$${parseFloat(p.monto||0).toFixed(2)}</span>
+                </div>`).join('');
+        } else {
+            hEl.innerHTML = '<p class="text-xs text-slate-300 text-center py-4">Sin pagos registrados</p>';
+        }
+    } catch (e) { /* silencioso */ }
+}
+
+
+// ── Config ─────────────────────────────────────────────────────────────────
+async function cargarConfig() {
+    try {
+        const r = await fetch('/api/admin/config');
+        if (!r.ok) return;
+        const d = await r.json();
+        document.getElementById('cfg-precio-mensual').value      = d.precio_mensual || '';
+        document.getElementById('cfg-precio-anual').value        = d.precio_anual || '';
+        document.getElementById('cfg-msg-wa').value              = d.mensaje_vencimiento_whatsapp || '';
+        document.getElementById('cfg-contacto-nombre').value     = d.contacto_nombre || '';
+        document.getElementById('cfg-contacto-telefono').value   = d.contacto_telefono || '';
+    } catch (e) { /* silencioso */ }
+}
+
+async function guardarConfig(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-guardar-config');
+    btn.disabled = true; btn.textContent = 'Guardando…';
+    const fd = new FormData(e.target);
+    const payload = {};
+    fd.forEach((v, k) => { if (v.trim()) payload[k] = v.trim(); });
+    try {
+        const r = await fetch('/api/admin/config', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        if (r.ok) {
+            mostrarToast('Configuración guardada', 'success');
+        } else {
+            mostrarToast('Error al guardar', 'error');
+        }
+    } catch (_) { mostrarToast('Error de conexión', 'error'); }
+    btn.disabled = false; btn.textContent = 'Guardar configuración';
+}
+
+async function notificarVencimientos() {
+    try {
+        const r = await fetch('/api/admin/notificar-vencimientos', { method: 'POST' });
+        const d = await r.json();
+        mostrarToast(`Enviados: ${d.notificados} mensajes`, 'success');
+    } catch (_) { mostrarToast('Error al enviar', 'error'); }
+}
+
+
+// ── Modal nueva lavandería ─────────────────────────────────────────────────
+function abrirModal() {
+    document.getElementById('modal-nueva').classList.remove('hidden');
+    document.getElementById('modal-form-view').classList.remove('hidden');
+    document.getElementById('modal-success-view').classList.add('hidden');
+    document.getElementById('form-nueva-lav').reset();
+}
+function cerrarModal() { document.getElementById('modal-nueva').classList.add('hidden'); }
+function cerrarModalYRecargar() { cerrarModal(); window.location.reload(); }
+document.getElementById('modal-nueva').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModal();
+});
+
+function generarPassword() {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+    let pwd = ''; const arr = new Uint8Array(12); crypto.getRandomValues(arr);
+    arr.forEach(b => { pwd += chars[b % chars.length]; });
+    document.getElementById('input-password').value = pwd;
+}
+
+async function submitNuevaLavanderia(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-nueva');
+    btn.disabled = true; btn.textContent = 'Creando…';
+    const fd = new FormData(e.target);
+    const payload = {
+        nombre:         fd.get('nombre').trim(),
+        telefono:       fd.get('telefono').trim() || null,
+        direccion:      fd.get('direccion').trim() || null,
+        ciudad:         fd.get('ciudad').trim() || null,
+        color_primario: fd.get('color_primario'),
+        plan:           fd.get('plan'),
+        owner_email:    fd.get('owner_email').trim(),
+        owner_password: fd.get('owner_password').trim() || null,
+    };
+    try {
+        const r = await fetch('/api/admin/lavanderias', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        if (!r.ok) { mostrarToast(data.detail || 'Error', 'error'); btn.disabled = false; btn.textContent = 'Crear Lavandería'; return; }
+        document.getElementById('cred-email').textContent    = data.owner_email;
+        document.getElementById('cred-password').textContent = data.owner_password_temporal;
+        document.getElementById('cred-id').textContent       = data.lavanderia_id;
+        document.getElementById('modal-form-view').classList.add('hidden');
+        document.getElementById('modal-success-view').classList.remove('hidden');
+    } catch (_) { mostrarToast('Error de conexión', 'error'); btn.disabled = false; btn.textContent = 'Crear Lavandería'; }
+}
+function copiarPassword() {
+    navigator.clipboard.writeText(document.getElementById('cred-password').textContent)
+        .then(() => mostrarToast('Contraseña copiada', 'success'));
+}
+
+
+// ── Modal crear owner ──────────────────────────────────────────────────────
+function abrirModalOwner(lavId, lavNombre) {
+    document.getElementById('modal-owner').classList.remove('hidden');
+    document.getElementById('modal-owner-form-view').classList.remove('hidden');
+    document.getElementById('modal-owner-success-view').classList.add('hidden');
+    document.getElementById('owner-lavanderia-id').value = lavId;
+    document.getElementById('modal-owner-nombre').textContent = lavNombre;
+    document.getElementById('form-owner').reset();
+    document.getElementById('input-owner-password').value = '';
+}
+function cerrarModalOwner() { document.getElementById('modal-owner').classList.add('hidden'); }
+function cerrarModalOwnerYRecargar() { cerrarModalOwner(); window.location.reload(); }
+document.getElementById('modal-owner').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalOwner();
+});
+
+function generarPasswordOwner() {
+    const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$';
+    let pwd = ''; const arr = new Uint8Array(12); crypto.getRandomValues(arr);
+    arr.forEach(b => { pwd += chars[b % chars.length]; });
+    document.getElementById('input-owner-password').value = pwd;
+}
+
+async function submitCrearOwner(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-owner');
+    btn.disabled = true; btn.textContent = 'Creando…';
+    const lavId = document.getElementById('owner-lavanderia-id').value;
+    const fd = new FormData(e.target);
+    const payload = {
+        owner_email:    fd.get('owner_email').trim(),
+        owner_password: fd.get('owner_password').trim() || null,
+    };
+    try {
+        const r = await fetch(`/api/admin/lavanderias/${lavId}/owner`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        if (!r.ok) { mostrarToast(data.detail || 'Error', 'error'); btn.disabled = false; btn.textContent = 'Guardar'; return; }
+        document.getElementById('owner-cred-email').textContent    = data.owner_email;
+        document.getElementById('owner-cred-password').textContent = data.owner_password_temporal;
+        document.getElementById('modal-owner-form-view').classList.add('hidden');
+        document.getElementById('modal-owner-success-view').classList.remove('hidden');
+    } catch (_) { mostrarToast('Error de conexión', 'error'); btn.disabled = false; btn.textContent = 'Guardar'; }
+}
+function copiarPasswordOwner() {
+    navigator.clipboard.writeText(document.getElementById('owner-cred-password').textContent)
+        .then(() => mostrarToast('Contraseña copiada', 'success'));
+}
+
+
+// ── Expandir tarjeta lavandería ────────────────────────────────────────────
+async function toggleExpandCard(lavId) {
+    const expandEl = document.getElementById('expand-' + lavId);
+    const chevronEl = document.getElementById('chevron-' + lavId);
+    const isHidden = expandEl.classList.contains('hidden');
+    if (isHidden) {
+        expandEl.classList.remove('hidden');
+        if (chevronEl) chevronEl.style.transform = 'rotate(180deg)';
+        if (!expandEl.dataset.loaded) {
+            await cargarDetallesCard(lavId);
+            expandEl.dataset.loaded = '1';
+        }
+    } else {
+        expandEl.classList.add('hidden');
+        if (chevronEl) chevronEl.style.transform = '';
+    }
+}
+
+async function cargarDetallesCard(lavId) {
+    const contentEl = document.getElementById('expand-content-' + lavId);
+    try {
+        const r = await fetch('/api/admin/lavanderias/' + lavId + '/detalle');
+        if (!r.ok) { contentEl.innerHTML = '<p class="text-xs text-red-400 text-center py-2">Error cargando</p>'; return; }
+        const d = await r.json();
+        const lav = d.lavanderia;
+        const diasRestantes = d.dias_restantes;
+        const planLabel = { trial: 'Trial', mensual: 'Mensual', anual: 'Anual' };
+        const metodoIcon = { yappy: '💳', nequi: '📱', efectivo: '💵', transferencia: '🏦' };
+
+        let planBadgeClass = 'text-green-700 bg-green-50';
+        let diasLabel = '';
+        if (diasRestantes !== null) {
+            if (diasRestantes < 0) {
+                planBadgeClass = 'text-red-700 bg-red-50';
+                diasLabel = `<span class="text-[10px] font-bold text-red-500">${Math.abs(diasRestantes)}d vencido</span>`;
+            } else if (diasRestantes <= 3) {
+                planBadgeClass = 'text-red-700 bg-red-50';
+                diasLabel = `<span class="text-[10px] font-semibold text-red-500">${diasRestantes}d restantes</span>`;
+            } else if (diasRestantes <= 7) {
+                planBadgeClass = 'text-amber-700 bg-amber-50';
+                diasLabel = `<span class="text-[10px] font-semibold text-amber-500">${diasRestantes}d restantes</span>`;
+            } else {
+                diasLabel = `<span class="text-[10px] text-slate-400">${diasRestantes}d restantes</span>`;
+            }
+        }
+
+        let html = '<div class="space-y-2">';
+
+        // Owner
+        html += `<div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Owner</span>
+            <span class="text-xs font-semibold text-slate-700 truncate max-w-[180px]">${d.owner ? d.owner.email : '<span class="text-slate-300">Sin owner</span>'}</span>
+        </div>`;
+
+        // Empleados
+        html += `<div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Empleados</span>
+            <span class="text-xs font-semibold text-slate-700">${d.empleados_count}</span>
+        </div>`;
+
+        // Plan con días restantes
+        html += `<div class="flex items-center justify-between">
+            <span class="text-xs text-slate-400">Plan activo</span>
+            <div class="flex items-center gap-1.5">
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${planBadgeClass}">${planLabel[lav.plan] || lav.plan}</span>
+                ${diasLabel}
+            </div>
+        </div>`;
+
+        // Deuda
+        if (d.tiene_deuda) {
+            html += `<div class="flex items-center gap-1.5 py-1.5 px-2 rounded-lg bg-red-50 border border-red-100">
+                <svg class="w-3 h-3 text-red-500 shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+                <span class="text-[10px] font-bold text-red-600">Deuda pendiente — suscripción vencida</span>
+            </div>`;
+        }
+
+        // Últimas 3 órdenes
+        html += `<div class="pt-1">
+            <p class="text-[10px] font-bold text-slate-400 uppercase tracking-wide mb-1.5">Últimas órdenes</p>`;
+        if (d.ultimas_ordenes && d.ultimas_ordenes.length > 0) {
+            html += d.ultimas_ordenes.map(o => `
+                <div class="flex items-center justify-between py-0.5">
+                    <span class="text-[10px] text-slate-600 font-medium">#${o.id} <span class="text-slate-400">${o.estatus || ''}</span></span>
+                    <span class="text-[10px] text-slate-400">${(o.created_at || '').slice(0, 10)}</span>
+                </div>`).join('');
+        } else {
+            html += '<p class="text-[10px] text-slate-300 py-0.5">Sin órdenes recientes</p>';
+        }
+        html += '</div>';
+
+        // Fecha registro
+        if (lav.created_at) {
+            html += `<div class="flex items-center justify-between border-t border-slate-100 pt-2 mt-1">
+                <span class="text-[10px] text-slate-400">Registro en sistema</span>
+                <span class="text-[10px] text-slate-400">${lav.created_at.slice(0, 10)}</span>
+            </div>`;
+        }
+
+        html += '</div>';
+        contentEl.innerHTML = html;
+    } catch (e) {
+        contentEl.innerHTML = '<p class="text-xs text-red-400 text-center py-2">Error cargando</p>';
+    }
+}
+
+
+// ── Modal pago ─────────────────────────────────────────────────────────────
+function abrirModalPago(lavId, lavNombre) {
+    document.getElementById('modal-pago').classList.remove('hidden');
+    document.getElementById('pago-lavanderia-id').value = lavId;
+    document.getElementById('pago-lav-nombre').textContent = lavNombre;
+    document.getElementById('form-pago').reset();
+    // Sugerir período: hoy → hoy + 30 días
+    const hoy = new Date();
+    const fin = new Date(hoy); fin.setDate(fin.getDate() + 30);
+    document.querySelector('[name=periodo_desde]').value = hoy.toISOString().slice(0,10);
+    document.querySelector('[name=periodo_hasta]').value = fin.toISOString().slice(0,10);
+    // Cargar historial
+    cargarHistorialPagoModal(lavId);
+}
+
+async function cargarHistorialPagoModal(lavId) {
+    const el = document.getElementById('historial-pagos-modal');
+    if (!el) return;
+    el.innerHTML = '<p class="text-xs text-slate-300 text-center py-2">Cargando…</p>';
+    try {
+        const r = await fetch('/api/admin/lavanderias/' + lavId + '/detalle');
+        if (!r.ok) { el.innerHTML = '<p class="text-xs text-slate-300 text-center py-2">—</p>'; return; }
+        const d = await r.json();
+        if (!d.pagos || d.pagos.length === 0) {
+            el.innerHTML = '<p class="text-xs text-slate-400 text-center py-2">Sin pagos anteriores</p>';
+            return;
+        }
+        const metodoIcon = { yappy: '💳', nequi: '📱', efectivo: '💵', transferencia: '🏦' };
+        el.innerHTML = d.pagos.slice(0, 3).map(p => `
+            <div class="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
+                <div class="min-w-0">
+                    <p class="text-xs font-semibold text-slate-700">${(p.fecha_pago || '').slice(0, 10)}</p>
+                    <p class="text-[10px] text-slate-400">${metodoIcon[p.metodo] || ''} ${p.metodo}${p.periodo_hasta ? ' · hasta ' + p.periodo_hasta : ''}${p.notas ? ' · ' + p.notas : ''}</p>
+                </div>
+                <span class="text-sm font-bold text-green-600 shrink-0 ml-2">$${parseFloat(p.monto || 0).toFixed(2)}</span>
+            </div>`).join('');
+    } catch (e) {
+        el.innerHTML = '<p class="text-xs text-slate-300 text-center py-2">—</p>';
+    }
+}
+function cerrarModalPago() { document.getElementById('modal-pago').classList.add('hidden'); }
+document.getElementById('modal-pago').addEventListener('click', function(e) {
+    if (e.target === this) cerrarModalPago();
+});
+
+async function submitPago(e) {
+    e.preventDefault();
+    const btn = document.getElementById('btn-submit-pago');
+    btn.disabled = true; btn.textContent = 'Registrando…';
+    const lavId = document.getElementById('pago-lavanderia-id').value;
+    const fd = new FormData(e.target);
+    const payload = {
+        lavanderia_id: parseInt(lavId),
+        monto:         parseFloat(fd.get('monto')),
+        metodo:        fd.get('metodo'),
+        periodo_desde: fd.get('periodo_desde') || null,
+        periodo_hasta: fd.get('periodo_hasta') || null,
+        notas:         fd.get('notas').trim() || null,
+    };
+    try {
+        const r = await fetch('/api/admin/billing/pago', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const data = await r.json();
+        if (!r.ok) { mostrarToast(data.detail || 'Error', 'error'); btn.disabled = false; btn.textContent = 'Registrar pago'; return; }
+        mostrarToast('Pago registrado', 'success');
+        cerrarModalPago();
+        billingLoaded = false;  // forzar recarga al volver a facturación
+        setTimeout(() => window.location.reload(), 1000);
+    } catch (_) { mostrarToast('Error de conexión', 'error'); btn.disabled = false; btn.textContent = 'Registrar pago'; }
+}
+
+
+// ── Toggle activo/inactivo ─────────────────────────────────────────────────
+async function toggleLavanderia(id, esActiva) {
+    const btn = document.getElementById('btn-toggle-' + id);
+    if (btn) btn.disabled = true;
+    try {
+        const r = await fetch(`/api/admin/lavanderias/${id}/toggle`, { method: 'PATCH' });
+        const d = await r.json();
+        if (!r.ok) { mostrarToast(d.detail || 'Error', 'error'); if (btn) btn.disabled = false; return; }
+        mostrarToast(d.activo ? 'Lavandería activada' : 'Lavandería suspendida', d.activo ? 'success' : 'info');
+        setTimeout(() => window.location.reload(), 800);
+    } catch (_) { mostrarToast('Error de conexión', 'error'); if (btn) btn.disabled = false; }
+}
+
+
+// ── Eliminar lavandería ────────────────────────────────────────────────────
+async function confirmarEliminar(id, nombre) {
+    if (!confirm(`¿Eliminar "${nombre}"? Esta acción desactivará la lavandería y sus usuarios.`)) return;
+    try {
+        const r = await fetch(`/api/admin/lavanderias/${id}`, { method: 'DELETE' });
+        if (r.ok) { mostrarToast('Lavandería eliminada', 'success'); setTimeout(() => window.location.reload(), 800); }
+        else { const d = await r.json(); mostrarToast(d.detail || 'Error', 'error'); }
+    } catch (_) { mostrarToast('Error de conexión', 'error'); }
+}
+</script>
+
+{% endblock %}
