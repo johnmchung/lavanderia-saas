@@ -5,6 +5,7 @@
 {% block bottomnav %}{% endblock %}
 
 {% block content %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
 <!-- ── Header ─────────────────────────────────────────────────────────── -->
 <div class="flex items-center justify-between mb-4">
@@ -28,65 +29,68 @@
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════════ -->
-<!-- TAB 1: MÉTRICAS                                                     -->
+<!-- TAB 1: DASHBOARD SAAS                                              -->
 <!-- ════════════════════════════════════════════════════════════════════ -->
 <div id="tab-metricas">
 
-    <!-- MRR destacado -->
+    <!-- Ingresos estimados destacado -->
     <div class="card p-5 mb-3 text-center"
          style="background:linear-gradient(135deg,#16a34a,#15803d)">
-        <p class="text-xs font-bold text-green-200 uppercase tracking-widest mb-1">MRR</p>
-        <p id="stat-mrr" class="text-4xl font-extrabold text-white">—</p>
-        <p class="text-xs text-green-200 mt-1">Ingresos recurrentes mensuales</p>
+        <p class="text-xs font-bold text-green-200 uppercase tracking-widest mb-1">Ingresos estimados / mes</p>
+        <p id="saas-ingresos" class="text-4xl font-extrabold text-white">—</p>
+        <p class="text-xs text-green-200 mt-1">Lavanderías activas × precio del plan</p>
     </div>
 
     <!-- KPIs grid -->
-    <div class="grid grid-cols-3 gap-2 mb-3">
+    <div class="grid grid-cols-2 gap-2 mb-3">
         <div class="card p-3 text-center">
-            <p id="stat-activas" class="text-2xl font-extrabold text-green-600">—</p>
+            <p id="saas-total" class="text-2xl font-extrabold text-slate-800">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Total registradas</p>
+        </div>
+        <div class="card p-3 text-center">
+            <p id="saas-nuevas" class="text-2xl font-extrabold text-blue-500">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Nuevas este mes</p>
+        </div>
+        <div class="card p-3 text-center">
+            <p id="saas-activas" class="text-2xl font-extrabold text-green-600">—</p>
             <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Activas</p>
         </div>
         <div class="card p-3 text-center">
-            <p id="stat-trial" class="text-2xl font-extrabold text-blue-500">—</p>
-            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Trial</p>
-        </div>
-        <div class="card p-3 text-center">
-            <p id="stat-inactivas" class="text-2xl font-extrabold text-slate-400">—</p>
-            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Vencidas</p>
+            <p id="saas-inactivas" class="text-2xl font-extrabold text-slate-400">—</p>
+            <p class="text-[10px] font-semibold text-slate-400 mt-0.5">Inactivas / vencidas</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-2 gap-2 mb-3">
-        <div class="card p-4 text-center">
-            <p id="stat-ordenes-hoy" class="text-2xl font-extrabold text-blue-600">—</p>
-            <p class="text-xs font-semibold text-slate-400 mt-0.5">Órdenes hoy</p>
-        </div>
-        <div class="card p-4 text-center">
-            <p id="stat-ventas-hoy" class="text-2xl font-extrabold text-emerald-600">—</p>
-            <p class="text-xs font-semibold text-slate-400 mt-0.5">Ventas hoy</p>
-        </div>
-    </div>
-
-    <!-- Top 3 -->
+    <!-- Gráfica de crecimiento -->
     <div class="card p-4 mb-3">
-        <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Top lavanderías · mes actual</p>
-        <div id="top3-lista">
-            <p class="text-xs text-slate-300 text-center py-2">Cargando…</p>
+        <p class="text-xs font-bold text-slate-500 uppercase tracking-wide mb-3">Crecimiento · últimos 6 meses</p>
+        <canvas id="saas-growth-chart" height="130"></canvas>
+    </div>
+
+    <!-- Tabla de suscripciones -->
+    <div class="card mb-3 overflow-hidden">
+        <div class="px-4 pt-4 pb-2">
+            <p class="text-xs font-bold text-slate-500 uppercase tracking-wide">Suscripciones</p>
+        </div>
+        <!-- Legend -->
+        <div class="flex gap-3 px-4 pb-2">
+            <span class="flex items-center gap-1 text-[10px] text-red-500 font-semibold">
+                <span class="inline-block w-2 h-2 rounded-full bg-red-400"></span>Vence &lt; 7 días
+            </span>
+            <span class="flex items-center gap-1 text-[10px] text-amber-500 font-semibold">
+                <span class="inline-block w-2 h-2 rounded-full bg-amber-400"></span>Vence &lt; 30 días
+            </span>
+        </div>
+        <div id="saas-suscripciones-tabla" class="divide-y divide-slate-50">
+            <p class="text-xs text-slate-300 text-center py-4">Cargando…</p>
         </div>
     </div>
 
-    <!-- Alertas -->
-    <div id="section-vencidas" class="mb-3 hidden">
-        <div class="rounded-2xl border border-amber-200 bg-amber-50 p-4">
-            <p class="text-xs font-bold text-amber-700 mb-2">Pago vencido / por vencer</p>
-            <div id="lista-vencidas" class="flex flex-col gap-1"></div>
-        </div>
-    </div>
-
-    <div id="section-sin-actividad" class="mb-5 hidden">
+    <!-- Riesgo de abandono -->
+    <div id="saas-sin-actividad-section" class="mb-5 hidden">
         <div class="rounded-2xl border border-red-200 bg-red-50 p-4">
-            <p class="text-xs font-bold text-red-600 mb-2">Sin actividad — últimos 7 días</p>
-            <div id="sin-actividad-lista" class="flex flex-col gap-1"></div>
+            <p class="text-xs font-bold text-red-600 mb-3">Riesgo de abandono — sin actividad (7 días)</p>
+            <div id="saas-sin-actividad-lista" class="flex flex-col gap-1.5"></div>
         </div>
     </div>
 
@@ -630,55 +634,116 @@ function showTab(name) {
 showTab('metricas');  // default
 
 
-// ── Stats ──────────────────────────────────────────────────────────────────
-async function cargarStats() {
+// ── Dashboard SaaS ─────────────────────────────────────────────────────────
+let growthChart = null;
+
+async function cargarDashboardSaaS() {
     try {
-        const r = await fetch('/api/admin/stats');
+        const r = await fetch('/api/admin/dashboard-saas');
         if (!r.ok) return;
         const d = await r.json();
 
-        document.getElementById('stat-mrr').textContent       = '$' + (d.mrr ?? 0).toFixed(2);
-        document.getElementById('stat-activas').textContent   = d.total_activas;
-        document.getElementById('stat-trial').textContent     = d.total_trial;
-        document.getElementById('stat-inactivas').textContent = d.total_inactivas;
-        document.getElementById('stat-ordenes-hoy').textContent = d.total_ordenes_hoy;
-        document.getElementById('stat-ventas-hoy').textContent  = '$' + (d.total_ventas_hoy ?? 0).toFixed(2);
+        // KPIs
+        document.getElementById('saas-ingresos').textContent  = '$' + (d.ingresos_estimados ?? 0).toFixed(2);
+        document.getElementById('saas-total').textContent     = d.total ?? 0;
+        document.getElementById('saas-nuevas').textContent    = d.nuevas_mes ?? 0;
+        document.getElementById('saas-activas').textContent   = (d.activas ?? 0) + (d.trial ? ` (+${d.trial} trial)` : '');
+        document.getElementById('saas-inactivas').textContent = d.inactivas ?? 0;
 
-        // Top 3
-        const top3El = document.getElementById('top3-lista');
-        if (d.top3_mes && d.top3_mes.length > 0) {
-            const medals = ['🥇', '🥈', '🥉'];
-            top3El.innerHTML = d.top3_mes.map((lav, i) => `
-                <div class="flex items-center justify-between py-1.5">
-                    <div class="flex items-center gap-2 min-w-0">
-                        <span class="text-base">${medals[i]}</span>
-                        <span class="text-sm font-semibold text-slate-700 truncate">${lav.nombre}</span>
+        // Tabla de suscripciones
+        const tablaEl = document.getElementById('saas-suscripciones-tabla');
+        const planLabel = { trial: 'Trial', mensual: 'Mensual', anual: 'Anual' };
+        const estatusLabel = { activa: 'Activa', trial: 'Trial', vencida: 'Vencida', suspendida: 'Suspendida' };
+        const estatusBadge = {
+            activa:     'text-green-700 bg-green-50',
+            trial:      'text-blue-700 bg-blue-50',
+            vencida:    'text-amber-700 bg-amber-50',
+            suspendida: 'text-red-700 bg-red-50',
+        };
+        if (d.suscripciones && d.suscripciones.length > 0) {
+            tablaEl.innerHTML = d.suscripciones.map(s => {
+                const dias = s.dias_restantes;
+                let rowBg = '';
+                let diasHtml = '';
+                if (dias !== null && dias !== undefined) {
+                    if (dias < 0) {
+                        rowBg = 'bg-red-50';
+                        diasHtml = `<span class="text-[10px] font-bold text-red-500">${Math.abs(dias)}d vencido</span>`;
+                    } else if (dias <= 7) {
+                        rowBg = 'bg-red-50';
+                        diasHtml = `<span class="text-[10px] font-bold text-red-500">${dias}d restantes</span>`;
+                    } else if (dias <= 30) {
+                        rowBg = 'bg-amber-50';
+                        diasHtml = `<span class="text-[10px] font-semibold text-amber-500">${dias}d restantes</span>`;
+                    } else {
+                        diasHtml = `<span class="text-[10px] text-slate-400">${dias}d</span>`;
+                    }
+                }
+                const badge = estatusBadge[s.estatus] || 'text-slate-500 bg-slate-50';
+                const label = estatusLabel[s.estatus] || s.estatus;
+                return `<div class="flex items-center justify-between px-4 py-2.5 ${rowBg}">
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-slate-900 truncate">${s.nombre}</p>
+                        <div class="flex items-center gap-1.5 mt-0.5">
+                            <span class="text-[10px] text-slate-400">${planLabel[s.plan] || s.plan}</span>
+                            ${s.fecha_vencimiento ? `<span class="text-[10px] text-slate-400">· ${s.fecha_vencimiento}</span>` : ''}
+                            ${diasHtml}
+                        </div>
                     </div>
-                    <span class="text-sm font-extrabold text-slate-900 shrink-0">${lav.ordenes} órd.</span>
-                </div>`).join('');
+                    <span class="ml-3 px-2 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${badge}">${label}</span>
+                </div>`;
+            }).join('');
         } else {
-            top3El.innerHTML = '<p class="text-xs text-slate-300 text-center py-2">Sin datos este mes</p>';
+            tablaEl.innerHTML = '<p class="text-xs text-slate-400 text-center py-4">Sin lavanderías registradas</p>';
         }
 
-        // Alertas: vencidas
-        if (d.vencidas_alerta && d.vencidas_alerta.length > 0) {
-            const colors = { vencida: 'text-amber-700', suspendida: 'text-red-600' };
-            document.getElementById('lista-vencidas').innerHTML = d.vencidas_alerta.map(l =>
-                `<p class="text-xs font-semibold ${colors[l.estatus] || 'text-slate-700'}">· ${l.nombre} (${l.estatus})</p>`
-            ).join('');
-            document.getElementById('section-vencidas').classList.remove('hidden');
-        }
-
-        // Alertas: sin actividad
+        // Riesgo de abandono
         if (d.sin_actividad_7d && d.sin_actividad_7d.length > 0) {
-            document.getElementById('sin-actividad-lista').innerHTML = d.sin_actividad_7d.map(l =>
-                `<p class="text-xs font-semibold text-red-700">· ${l.nombre}</p>`
+            document.getElementById('saas-sin-actividad-lista').innerHTML = d.sin_actividad_7d.map(l =>
+                `<div class="flex items-center justify-between">
+                    <p class="text-xs font-semibold text-red-700">${l.nombre}</p>
+                    <p class="text-[10px] text-red-400">${l.ultima_orden ? 'Última: ' + l.ultima_orden : 'Sin órdenes recientes'}</p>
+                </div>`
             ).join('');
-            document.getElementById('section-sin-actividad').classList.remove('hidden');
+            document.getElementById('saas-sin-actividad-section').classList.remove('hidden');
+        }
+
+        // Gráfica de crecimiento
+        if (d.crecimiento_meses && d.crecimiento_meses.length > 0) {
+            const labels = d.crecimiento_meses.map(m => {
+                const [year, month] = m.mes.split('-');
+                return new Date(parseInt(year), parseInt(month) - 1, 1)
+                    .toLocaleDateString('es', { month: 'short', year: '2-digit' });
+            });
+            const values = d.crecimiento_meses.map(m => m.count);
+            const ctx = document.getElementById('saas-growth-chart').getContext('2d');
+            if (growthChart) growthChart.destroy();
+            growthChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Nuevas lavanderías',
+                        data: values,
+                        backgroundColor: 'rgba(22,163,74,0.15)',
+                        borderColor: '#16a34a',
+                        borderWidth: 2,
+                        borderRadius: 6,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { beginAtZero: true, ticks: { stepSize: 1, font: { size: 10 } }, grid: { color: '#f1f5f9' } },
+                        x: { ticks: { font: { size: 10 } }, grid: { display: false } },
+                    },
+                },
+            });
         }
     } catch (e) { /* silencioso */ }
 }
-cargarStats();
+cargarDashboardSaaS();
 
 
 // ── Billing ────────────────────────────────────────────────────────────────

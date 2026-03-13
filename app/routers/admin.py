@@ -111,6 +111,138 @@ def _calcular_mrr(lavanderias: list, config: dict) -> float:
     return round(mrr, 2)
 
 
+# ── DASHBOARD SAAS ─────────────────────────────────────────────────────────
+
+@router.get("/dashboard-saas")
+async def get_dashboard_saas(_: dict = Depends(_require_superadmin)):
+    sb = get_supabase()
+    hoy = date.today()
+    primer_dia_mes = hoy.replace(day=1).isoformat()
+    hace_7 = (hoy - timedelta(days=7)).isoformat()
+    hace_30 = (hoy - timedelta(days=30)).isoformat()
+
+    # Todas las lavanderías
+    lav_res = sb.table("lavanderias").select("*").execute()
+    todas = lav_res.data or []
+
+    # Config de precios
+    cfg_res = sb.table("config_saas").select("clave, valor").execute()
+    config = {r["clave"]: r["valor"] for r in (cfg_res.data or [])}
+    precio_mensual = float(config.get("precio_mensual") or 25)
+    precio_anual = float(config.get("precio_anual") or 250)
+
+    total = len(todas)
+    activas = inactivas = trial_count = nuevas_mes = 0
+    ingresos_estimados = 0.0
+    suscripciones = []
+
+    for lav in todas:
+        estatus = calcular_estatus_suscripcion(lav)
+        lav["_estatus"] = estatus
+
+        if estatus == "activa":
+            activas += 1
+            plan = lav.get("plan", "mensual")
+            if plan == "mensual":
+                ingresos_estimados += precio_mensual
+            elif plan == "anual":
+                ingresos_estimados += precio_anual / 12
+        elif estatus == "trial":
+            trial_count += 1
+        else:
+            inactivas += 1
+
+        # Nuevas este mes
+        created = lav.get("created_at", "")
+        if created and created[:7] == primer_dia_mes[:7]:
+            nuevas_mes += 1
+
+        # Fila de suscripción
+        venc = lav.get("fecha_vencimiento_plan")
+        dias_restantes = None
+        if venc:
+            try:
+                v = datetime.fromisoformat(venc.replace("Z", "+00:00")).date()
+                dias_restantes = (v - hoy).days
+            except Exception:
+                pass
+
+        suscripciones.append({
+            "id": lav["id"],
+            "nombre": lav["nombre"],
+            "plan": lav.get("plan", "—"),
+            "fecha_vencimiento": venc[:10] if venc else None,
+            "dias_restantes": dias_restantes,
+            "estatus": estatus,
+            "activo": lav.get("activo", False),
+        })
+
+    # Ordenar: más urgentes primero (vencidas o próximas a vencer)
+    suscripciones.sort(key=lambda x: (x["dias_restantes"] is None, x["dias_restantes"] if x["dias_restantes"] is not None else 9999))
+
+    # Actividad últimos 7 días
+    ord_7d = (
+        sb.table("ordenes")
+        .select("lavanderia_id, created_at")
+        .gte("created_at", f"{hace_7}T00:00:00")
+        .execute()
+    )
+    lav_con_act_7d = {o["lavanderia_id"] for o in (ord_7d.data or []) if o.get("lavanderia_id")}
+
+    # Última actividad en últimos 30 días
+    ord_30d = (
+        sb.table("ordenes")
+        .select("lavanderia_id, created_at")
+        .gte("created_at", f"{hace_30}T00:00:00")
+        .execute()
+    )
+    ultima_orden_map: dict = {}
+    for o in (ord_30d.data or []):
+        lid = o.get("lavanderia_id")
+        if lid:
+            fecha = (o.get("created_at") or "")[:10]
+            if lid not in ultima_orden_map or fecha > ultima_orden_map[lid]:
+                ultima_orden_map[lid] = fecha
+
+    sin_actividad_7d = [
+        {
+            "id": lav["id"],
+            "nombre": lav["nombre"],
+            "ultima_orden": ultima_orden_map.get(lav["id"]),
+        }
+        for lav in todas
+        if lav.get("activo") and lav["id"] not in lav_con_act_7d
+    ]
+
+    # Crecimiento por mes — últimos 6 meses
+    meses: dict = {}
+    for i in range(5, -1, -1):
+        year = hoy.year
+        month = hoy.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+        mes_key = f"{year:04d}-{month:02d}"
+        meses[mes_key] = 0
+
+    for lav in todas:
+        created = (lav.get("created_at") or "")[:7]
+        if created in meses:
+            meses[created] += 1
+
+    return {
+        "total": total,
+        "activas": activas,
+        "trial": trial_count,
+        "inactivas": inactivas,
+        "nuevas_mes": nuevas_mes,
+        "ingresos_estimados": round(ingresos_estimados, 2),
+        "suscripciones": suscripciones,
+        "sin_actividad_7d": sin_actividad_7d,
+        "crecimiento_meses": [{"mes": k, "count": v} for k, v in meses.items()],
+    }
+
+
 # ── STATS ──────────────────────────────────────────────────────────────────
 
 @router.get("/stats")
