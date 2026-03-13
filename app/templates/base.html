@@ -174,45 +174,6 @@
             {% endif %}
         </div>
     </div>
-
-    {% if current_user is defined and request.url.path != '/admin' %}
-    <!-- ─── Barra de búsqueda global ─── -->
-    <div class="px-4 pb-2.5">
-        <div class="max-w-lg mx-auto relative">
-            <div class="relative flex items-center">
-                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none"
-                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                          d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
-                </svg>
-                <input
-                    type="search"
-                    id="global-search"
-                    placeholder="Buscar clientes u órdenes…"
-                    autocomplete="off"
-                    autocorrect="off"
-                    spellcheck="false"
-                    class="w-full pl-9 pr-9 py-2 bg-slate-100 rounded-xl text-sm border-0 outline-none
-                           focus:ring-2 focus:ring-brand-500 focus:bg-white transition-all"
-                    style="font-family:inherit"
-                />
-                <button id="search-clear"
-                        onclick="searchClear()"
-                        class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-full
-                               bg-slate-300 text-white flex items-center justify-center text-xs font-bold
-                               hover:bg-slate-400 transition-colors"
-                        aria-label="Limpiar búsqueda">
-                    ✕
-                </button>
-            </div>
-            <!-- Dropdown de resultados -->
-            <div id="search-dropdown"
-                 class="hidden absolute left-0 right-0 mt-1.5 bg-white rounded-2xl overflow-hidden overflow-y-auto"
-                 style="top:100%;z-index:200;box-shadow:0 8px 32px rgba(0,0,0,0.14);border:1px solid #f1f5f9;max-height:320px">
-            </div>
-        </div>
-    </div>
-    {% endif %}
 </header>
 
 <!-- ─── Banner de impersonación ─── -->
@@ -251,6 +212,20 @@
 
 <!-- ─── Bottom nav ─── -->
 {% block bottomnav %}
+
+{% if current_user is defined %}
+<!-- FAB flotante esquina inferior derecha -->
+<a href="/nueva-orden" id="fab-nueva-orden"
+   class="fixed z-40 flex items-center justify-center rounded-2xl text-white"
+   style="bottom:80px;right:16px;width:54px;height:54px;background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);box-shadow:0 6px 24px rgba(22,163,74,0.50);transition:transform 0.15s,box-shadow 0.15s"
+   onmouseenter="this.style.transform='scale(1.08)'" onmouseleave="this.style.transform='scale(1)'"
+   title="Nueva orden">
+    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+    </svg>
+</a>
+{% endif %}
+
 <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 z-50"
      style="padding-bottom:env(safe-area-inset-bottom);box-shadow:0 -1px 20px rgba(0,0,0,0.06)">
     <div class="max-w-lg mx-auto flex justify-around items-center h-16">
@@ -258,13 +233,18 @@
         <a href="/" class="flex flex-col items-center justify-center flex-1 h-full gap-0.5 relative
             {% if request.url.path == '/' %}nav-active{% else %}nav-inactive{% endif %}">
             {% if request.url.path == '/' %}<span class="nav-dot"></span>{% endif %}
-            <svg class="w-[22px] h-[22px]" fill="{% if request.url.path == '/' %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{% if request.url.path == '/' %}0{% else %}2{% endif %}"
-                      d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                {% if request.url.path == '/' %}
-                <path fill="white" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
-                {% endif %}
-            </svg>
+            <div class="relative">
+                <svg class="w-[22px] h-[22px]" fill="{% if request.url.path == '/' %}currentColor{% else %}none{% endif %}" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{% if request.url.path == '/' %}0{% else %}2{% endif %}"
+                          d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    {% if request.url.path == '/' %}
+                    <path fill="white" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                    {% endif %}
+                </svg>
+                <span id="nav-badge-ordenes"
+                      class="hidden absolute -top-1.5 -right-2 min-w-[17px] h-[17px] rounded-full text-[9px] font-black text-white flex items-center justify-center px-0.5 leading-none"
+                      style="background:#ef4444;box-shadow:0 0 0 2px white"></span>
+            </div>
             <svg class="w-[22px] h-[22px] {% if request.url.path != '/' %}hidden{% endif %}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                       d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
@@ -300,16 +280,6 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
                 </svg>
             </div>
-        </a>
-
-        <a href="/caja" class="flex flex-col items-center justify-center flex-1 h-full gap-0.5 relative
-            {% if request.url.path == '/caja' %}nav-active{% else %}nav-inactive{% endif %}">
-            {% if request.url.path == '/caja' %}<span class="nav-dot"></span>{% endif %}
-            <svg class="w-[22px] h-[22px]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="{% if request.url.path == '/caja' %}2.5{% else %}2{% endif %}"
-                      d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
-            </svg>
-            <span class="text-[11px] font-{% if request.url.path == '/caja' %}bold{% else %}semibold{% endif %}">Caja</span>
         </a>
 
         {% if not current_user is defined or current_user.rol != 'employee' %}
@@ -357,127 +327,26 @@
             `<span>${hoy.toLocaleDateString('es-PA', { day:'numeric', month:'short' })}</span>`;
     }
 
-    // ── Búsqueda global ──────────────────────────────────────────────────────
-    (function () {
-        const input    = document.getElementById('global-search');
-        const dropdown = document.getElementById('search-dropdown');
-        const clearBtn = document.getElementById('search-clear');
-        if (!input) return;
-
-        let timer = null;
-
-        const ESTATUS_COLOR = {
-            recibido:   'background:#fef9c3;color:#854d0e',
-            en_proceso: 'background:#dbeafe;color:#1e40af',
-            listo:      'background:#dcfce7;color:#15803d',
-            entregado:  'background:#f1f5f9;color:#475569',
-        };
-        const ESTATUS_LABEL = {
-            recibido: 'Recibido', en_proceso: 'En proceso',
-            listo: 'Listo', entregado: 'Entregado',
-        };
-
-        function esc(s) {
-            return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
-                                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-        }
-
-        function hide() { dropdown.classList.add('hidden'); }
-
-        function searchClear() {
-            input.value = '';
-            clearBtn.classList.add('hidden');
-            hide();
-            input.focus();
-        }
-        window.searchClear = searchClear;
-
-        function showLoading() {
-            dropdown.innerHTML = '<div style="padding:14px 16px;font-size:.85rem;color:#94a3b8;text-align:center">Buscando…</div>';
-            dropdown.classList.remove('hidden');
-        }
-
-        function render(data, q) {
-            const { clientes = [], ordenes = [] } = data;
-            if (!clientes.length && !ordenes.length) {
-                dropdown.innerHTML = `<div style="padding:14px 16px;font-size:.85rem;color:#94a3b8;text-align:center">Sin resultados para "<strong>${esc(q)}</strong>"</div>`;
-                return;
-            }
-            let h = '';
-            if (clientes.length) {
-                h += `<div style="padding:10px 16px 4px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8">Clientes</div>`;
-                for (const c of clientes) {
-                    h += `<a href="/clientes/${c.id}" onclick="searchClear()"
-                             style="display:flex;align-items:center;gap:12px;padding:10px 16px;text-decoration:none;transition:background .12s"
-                             onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''"
-                             ontouchstart="this.style.background='#f1f5f9'" ontouchend="this.style.background=''">
-                        <div style="width:32px;height:32px;border-radius:10px;background:#dcfce7;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <svg width="16" height="16" fill="none" stroke="#16a34a" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                            </svg>
-                        </div>
-                        <div style="min-width:0">
-                            <p style="margin:0;font-size:.875rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(c.nombre)}</p>
-                            <p style="margin:0;font-size:.75rem;color:#94a3b8">${esc(c.telefono || '')}</p>
-                        </div>
-                    </a>`;
+    // Badge de órdenes activas en nav
+    {% if current_user is defined %}
+    (async function actualizarBadgeOrdenes() {
+        try {
+            const res = await fetch('/api/ordenes/');
+            if (!res.ok) return;
+            const ordenes = await res.json();
+            const activas = ordenes.filter(o => ['recibido','en_proceso','listo'].includes(o.estatus)).length;
+            const badge = document.getElementById('nav-badge-ordenes');
+            if (badge) {
+                if (activas > 0) {
+                    badge.textContent = activas > 99 ? '99+' : activas;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
                 }
             }
-            if (ordenes.length) {
-                if (clientes.length) h += '<div style="height:1px;background:#f1f5f9;margin:2px 0"></div>';
-                h += `<div style="padding:10px 16px 4px;font-size:.68rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#94a3b8">Órdenes</div>`;
-                for (const o of ordenes) {
-                    const st = ESTATUS_COLOR[o.estatus] || 'background:#f1f5f9;color:#475569';
-                    const sl = ESTATUS_LABEL[o.estatus] || o.estatus;
-                    const num = String(o.id).padStart(4, '0');
-                    h += `<a href="/ordenes/${o.id}" onclick="searchClear()"
-                             style="display:flex;align-items:center;gap:12px;padding:10px 16px;text-decoration:none;transition:background .12s"
-                             onmouseenter="this.style.background='#f8fafc'" onmouseleave="this.style.background=''"
-                             ontouchstart="this.style.background='#f1f5f9'" ontouchend="this.style.background=''">
-                        <div style="width:32px;height:32px;border-radius:10px;background:#f1f5f9;display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                            <span style="font-size:.7rem;font-weight:700;color:#64748b">#${num}</span>
-                        </div>
-                        <div style="min-width:0;flex:1">
-                            <p style="margin:0 0 3px;font-size:.875rem;font-weight:600;color:#0f172a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(o.cliente_nombre || '')}</p>
-                            <span style="display:inline-block;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:99px;${st}">${sl}</span>
-                        </div>
-                    </a>`;
-                }
-            }
-            h += '<div style="height:6px"></div>';
-            dropdown.innerHTML = h;
-            dropdown.classList.remove('hidden');
-        }
-
-        async function doSearch(q) {
-            try {
-                const r = await fetch(`/api/busqueda?q=${encodeURIComponent(q)}`);
-                const data = await r.json();
-                render(data, q);
-            } catch {
-                dropdown.innerHTML = '<div style="padding:14px 16px;font-size:.85rem;color:#dc2626;text-align:center">Error al buscar</div>';
-            }
-        }
-
-        input.addEventListener('input', function () {
-            const q = this.value.trim();
-            clearTimeout(timer);
-            clearBtn.classList.toggle('hidden', !this.value);
-            if (q.length < 2) { hide(); return; }
-            showLoading();
-            timer = setTimeout(() => doSearch(q), 300);
-        });
-
-        input.addEventListener('keydown', function (e) {
-            if (e.key === 'Escape') searchClear();
-        });
-
-        // Cerrar al tocar fuera
-        document.addEventListener('pointerdown', function (e) {
-            if (!input.contains(e.target) && !dropdown.contains(e.target)) hide();
-        });
+        } catch(e) {}
     })();
+    {% endif %}
 
     function mostrarToast(msg, tipo = 'success') {
         const bg = {

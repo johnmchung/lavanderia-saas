@@ -16,7 +16,12 @@
 <div id="form-nuevo" class="hidden card p-4 mb-4 space-y-3">
     <p class="font-semibold text-gray-700">Nuevo cliente</p>
     <input type="text" id="n-nombre" placeholder="Nombre completo *" class="input-field">
-    <input type="tel" id="n-telefono" placeholder="Teléfono: 6XXX-XXXX *" class="input-field">
+    <div>
+        <input type="tel" id="n-telefono" placeholder="Teléfono: 6XXX-XXXX *" class="input-field"
+               oninput="verificarTelefonoDuplicado(this.value, 'aviso-tel-duplicado')">
+        <div id="aviso-tel-duplicado" class="hidden mt-2 px-3 py-2 rounded-xl text-xs font-bold"
+             style="background:#fef3c7;color:#92400e;border:1px solid #fde68a"></div>
+    </div>
     <input type="text" id="n-direccion" placeholder="Dirección (opcional)" class="input-field">
     <input type="text" id="n-notas" placeholder="Notas (opcional)" class="input-field">
     <div class="flex gap-2">
@@ -65,8 +70,7 @@ function renderClientes(clientes) {
     lista.innerHTML = clientes.map(c => `
         <div class="card p-4 flex items-center justify-between card-press">
             <a href="/clientes/${c.id}" class="flex-1 min-w-0 mr-3">
-                <p class="font-semibold text-slate-800">${c.nombre}</p>
-                <p class="text-sm text-slate-400">${c.telefono}</p>
+                <p class="font-semibold text-slate-800">${c.nombre} <span class="text-slate-400 font-normal">·</span> <span class="text-slate-500 font-medium">${c.telefono}</span></p>
                 ${c.direccion ? `<p class="text-xs text-slate-400 mt-0.5">${c.direccion}</p>` : ''}
             </a>
             <a href="/nueva-orden?cliente_id=${c.id}&nombre=${encodeURIComponent(c.nombre)}&telefono=${encodeURIComponent(c.telefono)}"
@@ -88,6 +92,26 @@ function filtrarClientes(q) {
 
 function toggleFormNuevo() {
     document.getElementById('form-nuevo').classList.toggle('hidden');
+}
+
+let telCheckTimer;
+async function verificarTelefonoDuplicado(valor, avisoId) {
+    const aviso = document.getElementById(avisoId);
+    clearTimeout(telCheckTimer);
+    const tel = valor.trim();
+    if (tel.length < 7) { aviso.classList.add('hidden'); return; }
+    telCheckTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/clientes/?buscar=${encodeURIComponent(tel)}`);
+            const clientes = await res.json();
+            if (clientes.length > 0) {
+                aviso.textContent = `⚠️ Ya existe un cliente con este teléfono: ${clientes[0].nombre}`;
+                aviso.classList.remove('hidden');
+            } else {
+                aviso.classList.add('hidden');
+            }
+        } catch(e) { aviso.classList.add('hidden'); }
+    }, 500);
 }
 
 async function crearCliente() {

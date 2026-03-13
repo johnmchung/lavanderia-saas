@@ -60,22 +60,22 @@
     </button>
     <button onclick="filtrar('recibido')" data-val="recibido"
             class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
-            style="background:#eff6ff;color:#3b82f6">
+            style="background:#f1f5f9;color:#475569">
         Recibido
     </button>
     <button onclick="filtrar('en_proceso')" data-val="en_proceso"
             class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
-            style="background:#fff7ed;color:#ea580c">
+            style="background:#dbeafe;color:#1d4ed8">
         En Proceso
     </button>
     <button onclick="filtrar('listo')" data-val="listo"
             class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
-            style="background:#f0fdf4;color:#16a34a">
+            style="background:#dcfce7;color:#15803d">
         Listo
     </button>
     <button onclick="filtrar('entregado')" data-val="entregado"
             class="filtro-btn px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shrink-0"
-            style="background:#f8fafc;color:#64748b">
+            style="background:#1e293b;color:#f8fafc">
         Entregado
     </button>
 </div>
@@ -200,18 +200,18 @@
 
 <script>
 const ESTATUS = {
-    recibido:   { bg: '#eff6ff', color: '#2563eb', accent: '#3b82f6', label: 'Recibido' },
-    en_proceso: { bg: '#fff7ed', color: '#c2410c', accent: '#f97316', label: 'En Proceso' },
-    listo:      { bg: '#f0fdf4', color: '#15803d', accent: '#22c55e', label: 'Listo' },
-    entregado:  { bg: '#f8fafc', color: '#64748b', accent: '#94a3b8', label: 'Entregado' },
+    recibido:   { bg: '#f1f5f9', color: '#475569', accent: '#94a3b8', label: 'Recibido' },
+    en_proceso: { bg: '#dbeafe', color: '#1d4ed8', accent: '#3b82f6', label: 'En Proceso' },
+    listo:      { bg: '#dcfce7', color: '#15803d', accent: '#22c55e', label: 'Listo' },
+    entregado:  { bg: '#1e293b', color: '#f8fafc', accent: '#475569', label: 'Entregado' },
 };
 const SIGUIENTE = { recibido: 'en_proceso', en_proceso: 'listo', listo: 'entregado' };
-const SIGUIENTE_LABEL = { recibido: 'En Proceso', en_proceso: 'Listo ✓', listo: 'Entregado' };
+const SIGUIENTE_LABEL = { recibido: 'En Proceso', en_proceso: 'Listo ✓', listo: 'Entregado ✓' };
 
 const BTN_NEXT_STYLE = {
-    recibido:   'background:#eff6ff;color:#2563eb;border:1.5px solid #bfdbfe',
-    en_proceso: 'background:#fff7ed;color:#c2410c;border:1.5px solid #fed7aa',
-    listo:      'background:linear-gradient(135deg,#16a34a,#15803d);color:white;border:none;box-shadow:0 3px 12px rgba(22,163,74,0.30)',
+    recibido:   'background:#dbeafe;color:#1d4ed8;border:1.5px solid #93c5fd',
+    en_proceso: 'background:#dcfce7;color:#15803d;border:1.5px solid #86efac',
+    listo:      'background:linear-gradient(135deg,#1e293b,#0f172a);color:white;border:none;box-shadow:0 3px 12px rgba(15,23,42,0.35)',
 };
 
 let filtroActual = '';
@@ -399,7 +399,17 @@ function renderOrdenes(ordenes, estatus = '', busqueda = '') {
         <div class="card card-press overflow-hidden" style="border-left:4px solid ${est.accent}">
             <div class="p-4">
 
-                <!-- Top: name + badge -->
+                <!-- Número de orden + estado (fila superior) -->
+                <div class="flex items-center justify-between mb-2.5">
+                    <span class="text-2xl font-black text-slate-900 font-mono tracking-tight leading-none">#${ordenNum}</span>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full font-bold shrink-0"
+                          style="background:${est.bg};color:${est.color};font-size:0.78rem">
+                        <span style="width:7px;height:7px;border-radius:50%;background:${est.color};display:inline-block;flex-shrink:0"></span>
+                        ${est.label}
+                    </span>
+                </div>
+
+                <!-- Top: name + note button -->
                 <div class="flex items-start justify-between gap-2 mb-3">
                     <div class="min-w-0 flex-1">
                         <div class="flex items-center gap-2 flex-wrap mb-0.5">
@@ -419,21 +429,15 @@ function renderOrdenes(ordenes, estatus = '', busqueda = '') {
                         <span class="text-xs text-slate-400 font-medium">${o.cliente_telefono} · ${hora}</span>
                         ${entregaBadge}
                     </div>
-                    <div class="flex items-center gap-1.5 shrink-0">
-                        <button onclick="abrirModalNota(${o.id}, ${JSON.stringify(o.notas_internas || '')})"
-                                title="Nota interna"
-                                class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
-                                style="${o.notas_internas ? 'background:#fef9c3;color:#a16207' : 'background:#f1f5f9;color:#94a3b8'}">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
-                            </svg>
-                        </button>
-                        <span class="badge shrink-0" style="background:${est.bg};color:${est.color}">
-                            <span class="badge-dot" style="background:${est.color}"></span>
-                            ${est.label}
-                        </span>
-                    </div>
+                    <button onclick="abrirModalNota(${o.id}, ${JSON.stringify(o.notas_internas || '')})"
+                            title="Nota interna"
+                            class="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-80 shrink-0"
+                            style="${o.notas_internas ? 'background:#fef9c3;color:#a16207' : 'background:#f1f5f9;color:#94a3b8'}">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                  d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828a2 2 0 01-1.414.586H9v-2a2 2 0 01.586-1.414z"/>
+                        </svg>
+                    </button>
                 </div>
 
                 <!-- Nota interna post-it -->
@@ -461,8 +465,8 @@ function renderOrdenes(ordenes, estatus = '', busqueda = '') {
                     </div>
                 </div>
 
-                <!-- Payment + order # -->
-                <div class="flex items-center justify-between mb-3">
+                <!-- Payment status -->
+                <div class="flex items-center mb-3">
                     ${esPagado ? `
                     <span class="inline-flex items-center gap-1.5 text-xs font-bold" style="color:#16a34a">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -476,13 +480,12 @@ function renderOrdenes(ordenes, estatus = '', busqueda = '') {
                         </svg>
                         Pendiente $${(total - pagado).toFixed(2)}
                     </span>`}
-                    <span class="text-[11px] text-slate-300 font-mono font-bold">#${ordenNum}</span>
                 </div>
 
                 <!-- Action buttons -->
                 <div class="flex gap-2">
                     ${sig ? `
-                    <button onclick="pedirConfirmacionEstatus(${o.id}, '${sig}')"
+                    <button onclick="cambiarEstatus(${o.id}, '${sig}')"
                             class="btn-touch flex-1 rounded-2xl font-bold text-sm transition-all"
                             style="${BTN_NEXT_STYLE[o.estatus] || 'background:#16a34a;color:white;border:none'};padding:12px 8px">
                         Marcar: ${SIGUIENTE_LABEL[o.estatus]}
@@ -603,10 +606,10 @@ function filtrar(estatus) {
         } else {
             const styles = {
                 '':          'background:#f1f5f9;color:#64748b;box-shadow:none',
-                'recibido':  'background:#eff6ff;color:#3b82f6;box-shadow:none',
-                'en_proceso':'background:#fff7ed;color:#ea580c;box-shadow:none',
-                'listo':     'background:#f0fdf4;color:#16a34a;box-shadow:none',
-                'entregado': 'background:#f8fafc;color:#64748b;box-shadow:none',
+                'recibido':  'background:#f1f5f9;color:#475569;box-shadow:none',
+                'en_proceso':'background:#dbeafe;color:#1d4ed8;box-shadow:none',
+                'listo':     'background:#dcfce7;color:#15803d;box-shadow:none',
+                'entregado': 'background:#1e293b;color:#f8fafc;box-shadow:none',
             };
             const s = styles[btn.dataset.val] || 'background:#f1f5f9;color:#64748b';
             s.split(';').forEach(rule => {

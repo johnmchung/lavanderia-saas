@@ -75,7 +75,12 @@
         <div id="form-nuevo-cliente" class="hidden mt-4 pt-4 space-y-3" style="border-top:1.5px solid #f1f5f9">
             <p class="text-xs font-bold text-slate-500 uppercase tracking-wider">Datos del nuevo cliente</p>
             <input type="text" id="nuevo-nombre" placeholder="Nombre completo *" class="input-field">
-            <input type="tel" id="nuevo-telefono" placeholder="Teléfono: 6XXX-XXXX *" class="input-field">
+            <div>
+                <input type="tel" id="nuevo-telefono" placeholder="Teléfono: 6XXX-XXXX *" class="input-field"
+                       oninput="verificarTelNuevoCliente(this.value)">
+                <div id="aviso-tel-nuevo" class="hidden mt-2 px-3 py-2 rounded-xl text-xs font-bold"
+                     style="background:#fef3c7;color:#92400e;border:1px solid #fde68a"></div>
+            </div>
             <input type="text" id="nuevo-direccion" placeholder="Dirección (opcional)" class="input-field">
             <div class="flex gap-2">
                 <button type="button" onclick="toggleNuevoCliente()" class="btn-secondary flex-1">Cancelar</button>
@@ -462,6 +467,26 @@ function toggleDomicilio() {
     document.getElementById('campo-direccion').classList.toggle('hidden', !domicilioActivo);
 }
 
+let telNuevoTimer;
+async function verificarTelNuevoCliente(valor) {
+    const aviso = document.getElementById('aviso-tel-nuevo');
+    clearTimeout(telNuevoTimer);
+    const tel = valor.trim();
+    if (tel.length < 7) { aviso.classList.add('hidden'); return; }
+    telNuevoTimer = setTimeout(async () => {
+        try {
+            const res = await fetch(`/api/clientes/?buscar=${encodeURIComponent(tel)}`);
+            const clientes = await res.json();
+            if (clientes.length > 0) {
+                aviso.textContent = `⚠️ Ya existe un cliente con este teléfono: ${clientes[0].nombre}`;
+                aviso.classList.remove('hidden');
+            } else {
+                aviso.classList.add('hidden');
+            }
+        } catch(e) { aviso.classList.add('hidden'); }
+    }, 500);
+}
+
 let buscarTimeout;
 async function buscarCliente(query) {
     clearTimeout(buscarTimeout);
@@ -482,7 +507,8 @@ async function buscarCliente(query) {
                     class="w-full text-left px-4 py-3 rounded-2xl border transition-all"
                     style="border-color:#e2e8f0;background:#f8fafc">
                 <span class="font-bold text-slate-800 text-sm">${c.nombre}</span>
-                <span class="text-xs text-slate-400 ml-2 font-medium">${c.telefono}</span>
+                <span class="text-slate-400 text-sm mx-1">·</span>
+                <span class="text-sm text-slate-500 font-medium">${c.telefono}</span>
             </button>
         `).join('');
     }, 300);
