@@ -1,0 +1,278 @@
+{% extends "base.html" %}
+{% block title %}Caja - {{ lavanderia.nombre }}{% endblock %}
+
+{% block content %}
+
+<!-- Header -->
+<div class="flex items-center justify-between mb-4">
+    <div>
+        <h1 class="text-2xl font-extrabold text-slate-900 tracking-tight">Caja</h1>
+        <p class="text-sm text-slate-400 font-medium mt-0.5" id="subtitle-fecha">Cargando…</p>
+    </div>
+    <button onclick="cargarResumen()"
+            class="w-10 h-10 rounded-xl flex items-center justify-center transition-all active:scale-95"
+            style="background:#f1f5f9" title="Actualizar">
+        <svg class="w-5 h-5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+    </button>
+</div>
+
+<!-- Loading state -->
+<div id="loading" class="flex flex-col items-center justify-center py-16 gap-3">
+    <div class="w-8 h-8 rounded-full border-2 border-green-200 border-t-green-600 animate-spin"></div>
+    <p class="text-sm text-slate-400">Cargando resumen…</p>
+</div>
+
+<!-- Content (hidden until loaded) -->
+<div id="contenido" class="hidden">
+
+    <!-- Total cobrado (hero card) -->
+    <div class="rounded-2xl p-5 mb-4 text-white"
+         style="background:linear-gradient(135deg,#16a34a 0%,#15803d 100%);box-shadow:0 4px 20px rgba(22,163,74,0.30)">
+        <p class="text-sm font-semibold opacity-80 mb-1">Total cobrado hoy</p>
+        <p class="text-4xl font-extrabold tracking-tight" id="total-cobrado">$0.00</p>
+        <p class="text-sm opacity-70 mt-1" id="num-pagos-label">0 pagos registrados</p>
+    </div>
+
+    <!-- Stats grid -->
+    <div class="grid grid-cols-3 gap-3 mb-4">
+        <div class="rounded-2xl p-4 text-center" style="background:#f8fafc;border:1px solid #e2e8f0">
+            <p class="text-xs text-slate-400 font-medium mb-1">Creadas hoy</p>
+            <p class="text-2xl font-extrabold text-slate-800" id="ordenes-creadas">—</p>
+        </div>
+        <div class="rounded-2xl p-4 text-center" style="background:#f8fafc;border:1px solid #e2e8f0">
+            <p class="text-xs text-slate-400 font-medium mb-1">Con pago</p>
+            <p class="text-2xl font-extrabold text-slate-800" id="ordenes-pagadas">—</p>
+        </div>
+        <div class="rounded-2xl p-4 text-center" style="background:#f8fafc;border:1px solid #e2e8f0">
+            <p class="text-xs text-slate-400 font-medium mb-1">Entregadas</p>
+            <p class="text-2xl font-extrabold text-slate-800" id="ordenes-entregadas">—</p>
+        </div>
+    </div>
+
+    <!-- Desglose por método -->
+    <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Por método de pago</h2>
+    <div class="grid grid-cols-2 gap-3 mb-5" id="grid-metodos">
+        <!-- Filled by JS -->
+    </div>
+
+    <!-- Lista de pagos -->
+    <div class="flex items-center justify-between mb-3">
+        <h2 class="text-sm font-bold text-slate-500 uppercase tracking-wider">Pagos del día</h2>
+        <span class="text-xs text-slate-400" id="count-pagos-label"></span>
+    </div>
+
+    <div id="lista-pagos" class="flex flex-col gap-2 mb-6">
+        <!-- Filled by JS -->
+    </div>
+
+    <div id="sin-pagos" class="hidden flex-col items-center justify-center py-10 gap-2">
+        <svg class="w-10 h-10 text-slate-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                  d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"/>
+        </svg>
+        <p class="text-sm text-slate-400 font-medium">Sin pagos registrados hoy</p>
+    </div>
+
+    <!-- Botón exportar -->
+    <button onclick="exportarResumen()"
+            class="w-full py-3.5 rounded-2xl font-bold text-sm flex items-center justify-center gap-2 transition-all active:scale-95"
+            style="background:#f1f5f9;color:#334155">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+        </svg>
+        Compartir resumen
+    </button>
+
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed top-5 left-1/2 -translate-x-1/2 z-[100] px-4 py-2.5 rounded-full text-sm font-semibold text-white shadow-lg"
+     style="background:#16a34a"></div>
+
+<script>
+let resumenData = null;
+
+const METODO_CONFIG = {
+    efectivo: { label: 'Efectivo', color: '#16a34a', bg: '#f0fdf4', icon: '💵' },
+    yappy:    { label: 'Yappy',    color: '#7c3aed', bg: '#f5f3ff', icon: '📱' },
+    nequi:    { label: 'Nequi',    color: '#db2777', bg: '#fdf2f8', icon: '📲' },
+    otro:     { label: 'Otro',     color: '#64748b', bg: '#f8fafc', icon: '🔄' },
+};
+
+async function cargarResumen() {
+    document.getElementById('loading').classList.remove('hidden');
+    document.getElementById('contenido').classList.add('hidden');
+
+    try {
+        const res = await fetch('/api/caja/resumen');
+        if (!res.ok) throw new Error('Error al cargar');
+        resumenData = await res.json();
+        renderResumen(resumenData);
+    } catch (e) {
+        mostrarToast('Error al cargar el resumen', true);
+    } finally {
+        document.getElementById('loading').classList.add('hidden');
+    }
+}
+
+function renderResumen(d) {
+    // Subtitle fecha
+    const fecha = new Date(d.fecha + 'T12:00:00');
+    const opciones = { weekday: 'long', day: 'numeric', month: 'long' };
+    document.getElementById('subtitle-fecha').textContent =
+        fecha.toLocaleDateString('es-PA', opciones);
+
+    // Hero
+    document.getElementById('total-cobrado').textContent =
+        '$' + d.total_cobrado.toFixed(2);
+    const np = d.num_pagos;
+    document.getElementById('num-pagos-label').textContent =
+        np === 1 ? '1 pago registrado' : `${np} pagos registrados`;
+
+    // Stats
+    document.getElementById('ordenes-creadas').textContent = d.ordenes_creadas_hoy;
+    document.getElementById('ordenes-pagadas').textContent = d.ordenes_con_pago;
+    document.getElementById('ordenes-entregadas').textContent = d.ordenes_entregadas_hoy;
+
+    // Desglose
+    const grid = document.getElementById('grid-metodos');
+    grid.innerHTML = '';
+    for (const [metodo, cfg] of Object.entries(METODO_CONFIG)) {
+        const info = d.desglose[metodo] || { count: 0, total: 0 };
+        grid.innerHTML += `
+        <div class="rounded-2xl p-4" style="background:${cfg.bg};border:1.5px solid ${info.count > 0 ? cfg.color + '33' : '#e2e8f0'}">
+            <div class="flex items-center gap-1.5 mb-2">
+                <span class="text-base">${cfg.icon}</span>
+                <span class="text-xs font-bold" style="color:${cfg.color}">${cfg.label}</span>
+            </div>
+            <p class="text-lg font-extrabold text-slate-800">$${info.total.toFixed(2)}</p>
+            <p class="text-xs text-slate-400 mt-0.5">${info.count} ${info.count === 1 ? 'pago' : 'pagos'}</p>
+        </div>`;
+    }
+
+    // Lista pagos
+    const lista = document.getElementById('lista-pagos');
+    const sinPagos = document.getElementById('sin-pagos');
+    const countLabel = document.getElementById('count-pagos-label');
+
+    lista.innerHTML = '';
+    if (d.pagos.length === 0) {
+        sinPagos.classList.remove('hidden');
+        sinPagos.classList.add('flex');
+        countLabel.textContent = '';
+    } else {
+        sinPagos.classList.add('hidden');
+        sinPagos.classList.remove('flex');
+        countLabel.textContent = `${d.pagos.length} registros`;
+
+        // Convert hora UTC → local
+        const ahora = new Date();
+        const offsetMin = ahora.getTimezoneOffset(); // e.g. 300 for UTC-5
+
+        for (const p of d.pagos) {
+            const cfg = METODO_CONFIG[p.metodo] || METODO_CONFIG.otro;
+            // Parse hora from stored UTC string
+            const [hStr, mStr] = p.hora.split(':');
+            const utcDate = new Date(Date.UTC(
+                parseInt(d.fecha.split('-')[0]),
+                parseInt(d.fecha.split('-')[1]) - 1,
+                parseInt(d.fecha.split('-')[2]),
+                parseInt(hStr), parseInt(mStr)
+            ));
+            const localHora = utcDate.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+            lista.innerHTML += `
+            <div class="rounded-2xl p-3.5 flex items-center gap-3" style="background:#f8fafc;border:1px solid #e2e8f0">
+                <div class="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-base" style="background:${cfg.bg}">
+                    ${cfg.icon}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-1.5">
+                        <span class="text-xs font-bold text-slate-400">${localHora}</span>
+                        <span class="text-xs text-slate-300">·</span>
+                        <a href="/" onclick="verOrden(${p.orden_id});return false;"
+                           class="text-xs font-bold" style="color:#16a34a">#${String(p.orden_id).padStart(4,'0')}</a>
+                    </div>
+                    <p class="text-sm font-semibold text-slate-700 truncate">${p.cliente}</p>
+                </div>
+                <div class="text-right shrink-0">
+                    <p class="text-base font-extrabold text-slate-800">$${p.monto.toFixed(2)}</p>
+                    <p class="text-xs font-medium mt-0.5" style="color:${cfg.color}">${cfg.label}</p>
+                </div>
+            </div>`;
+        }
+    }
+
+    document.getElementById('contenido').classList.remove('hidden');
+}
+
+function exportarResumen() {
+    if (!resumenData) return;
+    const d = resumenData;
+
+    const fecha = new Date(d.fecha + 'T12:00:00');
+    const fechaStr = fecha.toLocaleDateString('es-PA', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+    const nombreLav = document.title.split(' - ')[1] || 'Lavandería';
+
+    let texto = `📊 *Cierre de Caja — ${nombreLav}*\n`;
+    texto += `📅 ${fechaStr}\n\n`;
+    texto += `💰 *Total cobrado: $${d.total_cobrado.toFixed(2)}*\n`;
+    texto += `📋 Pagos registrados: ${d.num_pagos}\n`;
+    texto += `📦 Órdenes creadas: ${d.ordenes_creadas_hoy}\n`;
+    texto += `✅ Órdenes entregadas: ${d.ordenes_entregadas_hoy}\n\n`;
+
+    texto += `💳 *Por método de pago:*\n`;
+    for (const [metodo, cfg] of Object.entries(METODO_CONFIG)) {
+        const info = d.desglose[metodo] || { count: 0, total: 0 };
+        if (info.count > 0) {
+            texto += `  ${cfg.icon} ${cfg.label}: $${info.total.toFixed(2)} (${info.count} ${info.count === 1 ? 'pago' : 'pagos'})\n`;
+        }
+    }
+
+    if (d.pagos.length > 0) {
+        texto += `\n📝 *Detalle de pagos:*\n`;
+        for (const p of d.pagos) {
+            const cfg = METODO_CONFIG[p.metodo] || METODO_CONFIG.otro;
+            const [hStr, mStr] = p.hora.split(':');
+            const utcDate = new Date(Date.UTC(
+                parseInt(d.fecha.split('-')[0]),
+                parseInt(d.fecha.split('-')[1]) - 1,
+                parseInt(d.fecha.split('-')[2]),
+                parseInt(hStr), parseInt(mStr)
+            ));
+            const localHora = utcDate.toLocaleTimeString('es-PA', { hour: '2-digit', minute: '2-digit', hour12: true });
+            texto += `  ${localHora} · #${String(p.orden_id).padStart(4,'0')} · ${p.cliente} · $${p.monto.toFixed(2)} (${cfg.label})\n`;
+        }
+    }
+
+    // Try native share → fallback to clipboard
+    if (navigator.share) {
+        navigator.share({ text: texto }).catch(() => copiarAlPortapapeles(texto));
+    } else {
+        copiarAlPortapapeles(texto);
+    }
+}
+
+function copiarAlPortapapeles(texto) {
+    navigator.clipboard.writeText(texto)
+        .then(() => mostrarToast('Resumen copiado al portapapeles'))
+        .catch(() => mostrarToast('No se pudo copiar', true));
+}
+
+function mostrarToast(msg, error = false) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.style.background = error ? '#ef4444' : '#16a34a';
+    t.classList.remove('hidden');
+    setTimeout(() => t.classList.add('hidden'), 2800);
+}
+
+// Carga inicial
+cargarResumen();
+</script>
+
+{% endblock %}

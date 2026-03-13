@@ -7,6 +7,8 @@ from fastapi.templating import Jinja2Templates
 from app.routers import ordenes, clientes, dashboard, servicios, reportes, sastreria
 from app.routers import auth as auth_router
 from app.routers import admin as admin_router
+from app.routers import busqueda as busqueda_router
+from app.routers import caja as caja_router
 from app.config import get_lavanderia_data, get_supabase_with_token
 from app.utils import calcular_estatus_suscripcion
 
@@ -25,6 +27,8 @@ app.include_router(reportes.router, prefix="/api/reportes", tags=["reportes"])
 app.include_router(sastreria.router, prefix="/api/sastreria", tags=["sastreria"])
 app.include_router(auth_router.router)
 app.include_router(admin_router.router)
+app.include_router(busqueda_router.router, prefix="/api/busqueda", tags=["busqueda"])
+app.include_router(caja_router.router, prefix="/api/caja", tags=["caja"])
 
 
 # ── Excepciones de autenticación ──────────────────────────────────────────────
@@ -281,6 +285,15 @@ async def pagina_sastreria(request: Request, user: dict = Depends(get_current_us
 @app.get("/sastreria/nueva")
 async def pagina_nueva_sastreria(request: Request, user: dict = Depends(get_current_user)):
     return templates.TemplateResponse("pages/nueva_sastreria.html", {
+        "request": request,
+        "lavanderia": get_lavanderia_data(),
+        "current_user": user,
+    })
+
+
+@app.get("/caja")
+async def pagina_caja(request: Request, user: dict = Depends(get_current_user)):
+    return templates.TemplateResponse("pages/caja.html", {
         "request": request,
         "lavanderia": get_lavanderia_data(),
         "current_user": user,
